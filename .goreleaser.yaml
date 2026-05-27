@@ -29,14 +29,6 @@ archives:
       - goos: windows
         format: zip
 
-brews:
-  - repository:
-      owner: searchtgcli
-      name: homebrew-tap
-    homepage: "https://github.com/searchtgcli/tgs"
-    description: "Fast CLI client for searching Telegram"
-    license: "GPL-3.0"
-
 changelog:
   sort: asc
   filters:
