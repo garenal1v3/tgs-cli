@@ -29,15 +29,6 @@ archives:
       - goos: windows
         format: zip
 
-dockers:
-  - image_templates:
-      - "ghcr.io/searchtgcli/tgs:{{ .Version }}"
-      - "ghcr.io/searchtgcli/tgs:latest"
-    dockerfile: Dockerfile
-    build_flag_templates:
-      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
-      - "--label=org.opencontainers.image.version={{ .Version }}"
-
 brews:
   - repository:
       owner: searchtgcli
