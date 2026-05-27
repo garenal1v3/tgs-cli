@@ -9,6 +9,7 @@ import (
 
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/tg"
+	gosession "github.com/gotd/td/session"
 
 	"github.com/searchtgcli/tgs/internal/config"
 	"github.com/searchtgcli/tgs/internal/storage"
@@ -113,6 +114,13 @@ func (c *Client) LoadMeta() (*UserInfo, error) {
 		return nil, err
 	}
 	return &info, nil
+}
+
+// SessionStorage returns the session.Storage used by this client.
+// This is needed for MethodDesktop authentication, which must write to the
+// same storage that was passed to telegram.NewClient.
+func (c *Client) SessionStorage() gosession.Storage {
+	return c.session
 }
 
 // Close releases the session database.

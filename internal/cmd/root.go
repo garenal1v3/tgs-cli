@@ -26,6 +26,10 @@ func NewRoot() *cobra.Command {
 	root.PersistentFlags().BoolVar(&flagDebug, "debug", false, "enable debug logging")
 
 	root.AddCommand(newVersionCmd())
+	root.AddCommand(newLoginCmd())
+	root.AddCommand(newLogoutCmd())
+	root.AddCommand(newProfileCmd())
+	root.AddCommand(newWhoamiCmd())
 
 	return root
 }
