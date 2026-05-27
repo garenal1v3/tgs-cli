@@ -39,9 +39,7 @@ tgs will prompt for the verification code sent by Telegram. If 2FA is enabled, i
 
 The `code` method supports a fully non-interactive two-step flow. This is the recommended way for AI agents and automation tools.
 
-{{< snippet "auth/code-login.md" >}}
-
-If 2FA is enabled, pass `--password` in step 2.
+{{< snippet "auth/code-noninteractive.md" >}}
 
 ### QR Code
 

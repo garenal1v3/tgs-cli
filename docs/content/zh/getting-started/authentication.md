@@ -39,9 +39,7 @@ tgs 会提示输入 Telegram 发送的验证码。如果启用了两步验证，
 
 `code` 方式支持完全非交互的两步登录流程。这是 AI 代理和自动化工具的推荐方式。
 
-{{< snippet "auth/code-login.md" >}}
-
-如果启用了两步验证，请在第 2 步中传入 `--password`。
+{{< snippet "auth/code-noninteractive.md" >}}
 
 ### 二维码
 
