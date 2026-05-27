@@ -1,0 +1,55 @@
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - main: ./cmd/tgs/
+    binary: tgs
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X github.com/searchtgcli/tgs/internal/cmd.Version={{.Version}}
+      - -X github.com/searchtgcli/tgs/internal/cmd.Commit={{.ShortCommit}}
+      - -X github.com/searchtgcli/tgs/internal/cmd.Date={{.Date}}
+
+archives:
+  - format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        format: zip
+
+dockers:
+  - image_templates:
+      - "ghcr.io/searchtgcli/tgs:{{ .Version }}"
+      - "ghcr.io/searchtgcli/tgs:latest"
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
+      - "--label=org.opencontainers.image.version={{ .Version }}"
+
+brews:
+  - repository:
+      owner: searchtgcli
+      name: homebrew-tap
+    homepage: "https://github.com/searchtgcli/tgs"
+    description: "Fast CLI client for searching Telegram"
+    license: "GPL-3.0"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
