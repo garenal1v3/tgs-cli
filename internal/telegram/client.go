@@ -7,9 +7,9 @@ import (
 	"os"
 	"strconv"
 
+	gosession "github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/tg"
-	gosession "github.com/gotd/td/session"
 
 	"github.com/searchtgcli/tgs/internal/config"
 	"github.com/searchtgcli/tgs/internal/storage"

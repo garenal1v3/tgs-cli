@@ -15,7 +15,7 @@ func TestNewSession_CreatesDB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewSession() error: %v", err)
 	}
-	defer s.Close()
+	defer func() { _ = s.Close() }()
 
 	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
 		t.Error("expected db file to be created")
@@ -28,7 +28,7 @@ func TestSession_StoreAndLoad(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewSession() error: %v", err)
 	}
-	defer s.Close()
+	defer func() { _ = s.Close() }()
 
 	ctx := context.Background()
 	data := []byte("test-session-data")
@@ -53,7 +53,7 @@ func TestSession_LoadEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewSession() error: %v", err)
 	}
-	defer s.Close()
+	defer func() { _ = s.Close() }()
 
 	ctx := context.Background()
 	got, err := s.LoadSession(ctx)
@@ -72,7 +72,7 @@ func TestSession_StoreAndLoadMeta(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewSession() error: %v", err)
 	}
-	defer s.Close()
+	defer func() { _ = s.Close() }()
 
 	if err := s.StoreMeta("phone", []byte("+1234567890")); err != nil {
 		t.Fatalf("StoreMeta() error: %v", err)
@@ -94,10 +94,14 @@ func TestSession_LoadAllMeta(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewSession() error: %v", err)
 	}
-	defer s.Close()
+	defer func() { _ = s.Close() }()
 
-	s.StoreMeta("phone", []byte("+1234567890"))
-	s.StoreMeta("username", []byte("testuser"))
+	if err := s.StoreMeta("phone", []byte("+1234567890")); err != nil {
+		t.Fatalf("StoreMeta(phone) error: %v", err)
+	}
+	if err := s.StoreMeta("username", []byte("testuser")); err != nil {
+		t.Fatalf("StoreMeta(username) error: %v", err)
+	}
 
 	meta, err := s.LoadAllMeta()
 	if err != nil {
@@ -118,7 +122,7 @@ func TestSession_LoadMeta_Empty(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewSession() error: %v", err)
 	}
-	defer s.Close()
+	defer func() { _ = s.Close() }()
 
 	got, err := s.LoadMeta("nonexistent")
 	if err != nil {

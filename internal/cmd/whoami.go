@@ -32,7 +32,7 @@ func runWhoami(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("open session: %w", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	info, err := client.LoadMeta()
 	if err != nil {
@@ -40,21 +40,21 @@ func runWhoami(cmd *cobra.Command, _ []string) error {
 	}
 
 	if flagOutput == "text" {
-		fmt.Fprintf(cmd.OutOrStdout(), "Profile: %s\n", profileName)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Profile: %s\n", profileName)
 		if info == nil {
-			fmt.Fprintln(cmd.OutOrStdout(), "Not logged in (no cached user info).")
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Not logged in (no cached user info).")
 			return nil
 		}
 		name := info.FirstName
 		if info.LastName != "" {
 			name += " " + info.LastName
 		}
-		fmt.Fprintf(cmd.OutOrStdout(), "User:    %s (id: %d)\n", name, info.ID)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "User:    %s (id: %d)\n", name, info.ID)
 		if info.Username != "" {
-			fmt.Fprintf(cmd.OutOrStdout(), "Handle:  @%s\n", info.Username)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Handle:  @%s\n", info.Username)
 		}
 		if info.Phone != "" {
-			fmt.Fprintf(cmd.OutOrStdout(), "Phone:   %s\n", info.Phone)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Phone:   %s\n", info.Phone)
 		}
 		return nil
 	}

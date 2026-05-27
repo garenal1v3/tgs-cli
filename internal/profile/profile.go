@@ -101,7 +101,7 @@ func List() ([]ProfileInfo, error) {
 			continue
 		}
 		meta, _ := s.LoadAllMeta()
-		s.Close()
+		_ = s.Close()
 		info.Phone = meta["phone"]
 		info.Username = meta["username"]
 		info.UserID = meta["user_id"]

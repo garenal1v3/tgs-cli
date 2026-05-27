@@ -47,7 +47,7 @@ func runProfileList(cmd *cobra.Command, _ []string) error {
 
 	if flagOutput == "text" {
 		if len(profiles) == 0 {
-			fmt.Fprintln(cmd.OutOrStdout(), "No profiles found.")
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "No profiles found.")
 			return nil
 		}
 		for _, p := range profiles {
@@ -61,7 +61,7 @@ func runProfileList(cmd *cobra.Command, _ []string) error {
 			} else if p.Phone != "" {
 				line += " (" + p.Phone + ")"
 			}
-			fmt.Fprintln(cmd.OutOrStdout(), line)
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), line)
 		}
 		return nil
 	}
@@ -110,7 +110,7 @@ func runProfileSwitch(cmd *cobra.Command, args []string) error {
 	}
 
 	if flagOutput == "text" {
-		fmt.Fprintf(cmd.OutOrStdout(), "Switched to profile %q (wrote .tgs.yaml in %s)\n", name, cwd)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Switched to profile %q (wrote .tgs.yaml in %s)\n", name, cwd)
 		return nil
 	}
 
@@ -150,7 +150,7 @@ func runProfileDelete(cmd *cobra.Command, args []string) error {
 	}
 
 	if flagOutput == "text" {
-		fmt.Fprintf(cmd.OutOrStdout(), "Deleted profile %q\n", name)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Deleted profile %q\n", name)
 		return nil
 	}
 

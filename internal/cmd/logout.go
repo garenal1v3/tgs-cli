@@ -34,7 +34,7 @@ func runLogout(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("create telegram client: %w", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	if err := client.Run(context.Background(), func(ctx context.Context, api *tg.Client) error {
 		_, err := api.AuthLogOut(ctx)
@@ -44,7 +44,7 @@ func runLogout(cmd *cobra.Command, _ []string) error {
 	}
 
 	if flagOutput == "text" {
-		fmt.Fprintf(cmd.OutOrStdout(), "Logged out (profile: %s)\n", profileName)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Logged out (profile: %s)\n", profileName)
 		return nil
 	}
 

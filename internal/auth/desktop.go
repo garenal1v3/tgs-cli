@@ -61,7 +61,7 @@ func findTDataDir(override string) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("Telegram Desktop tdata not found; use --desktop-dir to specify the path")
+	return "", fmt.Errorf("telegram Desktop tdata not found; use --desktop-dir to specify the path")
 }
 
 // loginDesktop imports the first account from a Telegram Desktop tdata directory

@@ -14,7 +14,9 @@ import (
 func TestFindConfig_InCurrentDir(t *testing.T) {
 	dir := t.TempDir()
 	cfgFile := filepath.Join(dir, ".tgs.yaml")
-	os.WriteFile(cfgFile, []byte("profile: work"), 0o644)
+	if err := os.WriteFile(cfgFile, []byte("profile: work"), 0o644); err != nil {
+		t.Fatalf("WriteFile() error: %v", err)
+	}
 
 	got, err := FindConfig(dir)
 	if err != nil {
@@ -28,8 +30,12 @@ func TestFindConfig_InCurrentDir(t *testing.T) {
 func TestFindConfig_WalksUp(t *testing.T) {
 	root := t.TempDir()
 	child := filepath.Join(root, "a", "b", "c")
-	os.MkdirAll(child, 0o755)
-	os.WriteFile(filepath.Join(root, ".tgs.yaml"), []byte("profile: parent"), 0o644)
+	if err := os.MkdirAll(child, 0o755); err != nil {
+		t.Fatalf("MkdirAll() error: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(root, ".tgs.yaml"), []byte("profile: parent"), 0o644); err != nil {
+		t.Fatalf("WriteFile() error: %v", err)
+	}
 
 	got, err := FindConfig(child)
 	if err != nil {
@@ -70,7 +76,9 @@ func TestResolve_EnvWins(t *testing.T) {
 func TestResolve_FileWins(t *testing.T) {
 	t.Setenv("TGS_PROFILE", "")
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, ".tgs.yaml"), []byte("profile: file-profile"), 0o644)
+	if err := os.WriteFile(filepath.Join(dir, ".tgs.yaml"), []byte("profile: file-profile"), 0o644); err != nil {
+		t.Fatalf("WriteFile() error: %v", err)
+	}
 
 	got := Resolve("", dir)
 	if got != "file-profile" {
@@ -108,7 +116,9 @@ func TestSwitch_CreatesFile(t *testing.T) {
 
 func TestSwitch_OverwritesExisting(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, ".tgs.yaml"), []byte("profile: old"), 0o644)
+	if err := os.WriteFile(filepath.Join(dir, ".tgs.yaml"), []byte("profile: old"), 0o644); err != nil {
+		t.Fatalf("WriteFile() error: %v", err)
+	}
 
 	if err := Switch("new", dir); err != nil {
 		t.Fatalf("Switch() error: %v", err)
@@ -141,8 +151,12 @@ func TestList_WithProfiles(t *testing.T) {
 		if err != nil {
 			t.Fatalf("NewSession(%s) error: %v", name, err)
 		}
-		s.StoreMeta("phone", []byte("+100000000"+name))
-		s.Close()
+		if err := s.StoreMeta("phone", []byte("+100000000"+name)); err != nil {
+			t.Fatalf("StoreMeta(%s) error: %v", name, err)
+		}
+		if err := s.Close(); err != nil {
+			t.Fatalf("Close(%s) error: %v", name, err)
+		}
 	}
 
 	profiles, err := List()
@@ -163,7 +177,9 @@ func TestDelete_RemovesProfile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewSession() error: %v", err)
 	}
-	s.Close()
+	if err := s.Close(); err != nil {
+		t.Fatalf("Close() error: %v", err)
+	}
 
 	if err := Delete("deleteme"); err != nil {
 		t.Fatalf("Delete() error: %v", err)

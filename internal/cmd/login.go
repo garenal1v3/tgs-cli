@@ -8,17 +8,17 @@ import (
 
 	"github.com/spf13/cobra"
 
+	tg "github.com/gotd/td/tg"
 	"github.com/searchtgcli/tgs/internal/auth"
 	"github.com/searchtgcli/tgs/internal/profile"
 	"github.com/searchtgcli/tgs/internal/telegram"
-	tg "github.com/gotd/td/tg"
 )
 
 var (
-	flagLoginType   string
-	flagDesktopDir  string
-	flagPasscode    string
-	flagPhone       string
+	flagLoginType  string
+	flagDesktopDir string
+	flagPasscode   string
+	flagPhone      string
 )
 
 func newLoginCmd() *cobra.Command {
@@ -58,7 +58,7 @@ func runLogin(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("create telegram client: %w", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	opts := auth.Options{
 		Method:     method,
@@ -137,9 +137,9 @@ func printLoginResult(cmd *cobra.Command, profileName string, info *telegram.Use
 			if info.LastName != "" {
 				name += " " + info.LastName
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Logged in as %s (id: %d, profile: %s)\n", name, info.ID, profileName)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Logged in as %s (id: %d, profile: %s)\n", name, info.ID, profileName)
 		} else {
-			fmt.Fprintf(cmd.OutOrStdout(), "Logged in (profile: %s)\n", profileName)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Logged in (profile: %s)\n", profileName)
 		}
 		return nil
 	}
