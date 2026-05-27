@@ -19,7 +19,7 @@ func newVersionCmd() *cobra.Command {
 		Short: "Print version information",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if flagOutput == "text" {
-				fmt.Fprintf(cmd.OutOrStdout(), "tgs %s\ncommit: %s\nbuilt:  %s\n", Version, Commit, Date)
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "tgs %s\ncommit: %s\nbuilt:  %s\n", Version, Commit, Date)
 				return nil
 			}
 			return json.NewEncoder(cmd.OutOrStdout()).Encode(map[string]string{

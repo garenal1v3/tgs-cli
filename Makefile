@@ -6,13 +6,21 @@ LDFLAGS  = -s -w \
 	-X github.com/searchtgcli/tgs/internal/cmd.Commit=$(COMMIT) \
 	-X github.com/searchtgcli/tgs/internal/cmd.Date=$(DATE)
 
-.PHONY: build lint test install clean
+GOLANGCI_LINT_VERSION ?= v2.12.2
+
+.PHONY: build lint lint-docker fmt test install clean
 
 build:
 	go build -ldflags '$(LDFLAGS)' -o tgs ./cmd/tgs/
 
 lint:
 	golangci-lint run ./...
+
+lint-docker:
+	docker run --rm -v $(CURDIR):/app -w /app golangci/golangci-lint:$(GOLANGCI_LINT_VERSION) golangci-lint run ./...
+
+fmt:
+	golangci-lint fmt ./...
 
 test:
 	go test ./... -v

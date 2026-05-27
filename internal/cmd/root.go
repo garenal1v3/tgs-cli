@@ -14,9 +14,9 @@ var (
 
 func NewRoot() *cobra.Command {
 	root := &cobra.Command{
-		Use:   "tgs",
-		Short: "Telegram search CLI",
-		Long:  "Fast CLI client for searching Telegram via user account.",
+		Use:           "tgs",
+		Short:         "Telegram search CLI",
+		Long:          "Fast CLI client for searching Telegram via user account.",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
