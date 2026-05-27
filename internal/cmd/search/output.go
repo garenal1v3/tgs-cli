@@ -62,13 +62,13 @@ func writeSearchResult(w io.Writer, format string, result *search.SearchResult) 
 			text = strings.ReplaceAll(text, "\n", " ")
 
 			if from != "" {
-				fmt.Fprintf(w, "[%s] %s | %s: %s\n", date, chatName, from, text)
+				_, _ = fmt.Fprintf(w, "[%s] %s | %s: %s\n", date, chatName, from, text)
 			} else {
-				fmt.Fprintf(w, "[%s] %s: %s\n", date, chatName, text)
+				_, _ = fmt.Fprintf(w, "[%s] %s: %s\n", date, chatName, text)
 			}
 		}
 		if result.Cursor != "" {
-			fmt.Fprintf(w, "\n--- cursor: %s\n", result.Cursor)
+			_, _ = fmt.Fprintf(w, "\n--- cursor: %s\n", result.Cursor)
 		}
 		return nil
 	}
@@ -78,7 +78,7 @@ func writeSearchResult(w io.Writer, format string, result *search.SearchResult) 
 func writeCountersResult(w io.Writer, format string, result *search.CountersResult) error {
 	if format == "text" {
 		for _, c := range result.Counters {
-			fmt.Fprintf(w, "%-12s %d\n", c.Filter, c.Count)
+			_, _ = fmt.Fprintf(w, "%-12s %d\n", c.Filter, c.Count)
 		}
 		return nil
 	}
@@ -88,10 +88,10 @@ func writeCountersResult(w io.Writer, format string, result *search.CountersResu
 func writeCalendarResult(w io.Writer, format string, result *search.CalendarResult) error {
 	if format == "text" {
 		for _, p := range result.Periods {
-			fmt.Fprintf(w, "%s  %d\n", p.Date, p.Count)
+			_, _ = fmt.Fprintf(w, "%s  %d\n", p.Date, p.Count)
 		}
 		if result.Total > 0 {
-			fmt.Fprintf(w, "\ntotal: %d\n", result.Total)
+			_, _ = fmt.Fprintf(w, "\ntotal: %d\n", result.Total)
 		}
 		return nil
 	}
