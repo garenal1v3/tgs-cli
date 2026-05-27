@@ -24,6 +24,14 @@ go.work.sum
 .DS_Store
 Thumbs.db
 
+# Hugo docs build artifacts
+docs/public/
+docs/resources/
+docs/node_modules/
+docs/package.json
+docs/package-lock.json
+docs/.hugo_build.lock
+
 # Project
 docs/superpowers/
 .claude/
