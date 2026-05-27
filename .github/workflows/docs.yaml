@@ -20,13 +20,21 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      HUGO_VERSION: "0.147.6"
+      HUGO_VERSION: "0.157.0"
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-go@v5
         with:
           go-version-file: docs/go.mod
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install PostCSS
+        working-directory: docs
+        run: npm install postcss postcss-cli autoprefixer
 
       - name: Install Hugo
         run: |
