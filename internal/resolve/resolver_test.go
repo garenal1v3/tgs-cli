@@ -13,15 +13,15 @@ import (
 // mockAPI implements the API interface for testing.
 type mockAPI struct {
 	resolveUsername func(ctx context.Context, req *tg.ContactsResolveUsernameRequest) (*tg.ContactsResolvedPeer, error)
-	resolvePhone   func(ctx context.Context, req *tg.ContactsResolvePhoneRequest) (*tg.ContactsResolvedPeer, error)
+	resolvePhone   func(ctx context.Context, phone string) (*tg.ContactsResolvedPeer, error)
 }
 
 func (m *mockAPI) ContactsResolveUsername(ctx context.Context, req *tg.ContactsResolveUsernameRequest) (*tg.ContactsResolvedPeer, error) {
 	return m.resolveUsername(ctx, req)
 }
 
-func (m *mockAPI) ContactsResolvePhone(ctx context.Context, req *tg.ContactsResolvePhoneRequest) (*tg.ContactsResolvedPeer, error) {
-	return m.resolvePhone(ctx, req)
+func (m *mockAPI) ContactsResolvePhone(ctx context.Context, phone string) (*tg.ContactsResolvedPeer, error) {
+	return m.resolvePhone(ctx, phone)
 }
 
 // makeUserResolved builds a ContactsResolvedPeer for a user with the given ID and access hash.
@@ -64,9 +64,9 @@ func TestResolver_ResolveUsername(t *testing.T) {
 
 func TestResolver_ResolvePhone(t *testing.T) {
 	api := &mockAPI{
-		resolvePhone: func(_ context.Context, req *tg.ContactsResolvePhoneRequest) (*tg.ContactsResolvedPeer, error) {
-			if req.Phone != "79001234567" {
-				t.Errorf("unexpected phone: %q", req.Phone)
+		resolvePhone: func(_ context.Context, phone string) (*tg.ContactsResolvedPeer, error) {
+			if phone != "79001234567" {
+				t.Errorf("unexpected phone: %q", phone)
 			}
 			return makeUserResolved(789, 101), nil
 		},

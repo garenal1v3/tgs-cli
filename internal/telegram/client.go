@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	gosession "github.com/gotd/td/session"
@@ -140,6 +141,11 @@ func (c *Client) LoadMeta() (*UserInfo, error) {
 // same storage that was passed to telegram.NewClient.
 func (c *Client) SessionStorage() gosession.Storage {
 	return c.session
+}
+
+// CachePath returns the path to the peer cache database for the given profile.
+func CachePath(profileName string) string {
+	return filepath.Join(config.ProfileDir(profileName), "cache.db")
 }
 
 // Close releases the session database.

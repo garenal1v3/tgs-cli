@@ -11,7 +11,7 @@ import (
 // API is the subset of the Telegram client used by the Resolver.
 type API interface {
 	ContactsResolveUsername(ctx context.Context, req *tg.ContactsResolveUsernameRequest) (*tg.ContactsResolvedPeer, error)
-	ContactsResolvePhone(ctx context.Context, req *tg.ContactsResolvePhoneRequest) (*tg.ContactsResolvedPeer, error)
+	ContactsResolvePhone(ctx context.Context, phone string) (*tg.ContactsResolvedPeer, error)
 }
 
 // Resolver resolves user-supplied peer references (usernames, phone numbers, IDs)
@@ -98,9 +98,7 @@ func (r *Resolver) resolveUsername(ctx context.Context, username string) (tg.Inp
 
 // resolvePhone resolves a phone number via the Telegram API.
 func (r *Resolver) resolvePhone(ctx context.Context, phone string) (tg.InputPeerClass, error) {
-	res, err := r.api.ContactsResolvePhone(ctx, &tg.ContactsResolvePhoneRequest{
-		Phone: phone,
-	})
+	res, err := r.api.ContactsResolvePhone(ctx, phone)
 	if err != nil {
 		return nil, fmt.Errorf("resolve phone %q: %w", phone, err)
 	}
