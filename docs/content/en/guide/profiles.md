@@ -20,16 +20,7 @@ When you run any tgs command, the active profile is determined by this priority 
 
 You can bind a profile to a directory by creating a `.tgs.yaml` file. Use `tgs profile switch` to do this automatically:
 
-```bash
-cd ~/projects/work-project
-tgs profile switch work
-```
-
-This writes a `.tgs.yaml` in the current directory:
-
-```yaml
-profile: work
-```
+{{< snippet "profiles/switch-yaml.md" >}}
 
 tgs walks up the directory tree to find `.tgs.yaml`, so it applies in all subdirectories too. This is the recommended way to use different accounts per project.
 
@@ -37,56 +28,25 @@ tgs walks up the directory tree to find `.tgs.yaml`, so it applies in all subdir
 
 ### List profiles
 
-```bash
-tgs profile list
-```
-
-Text output (`--output text`):
-
-```
-* default (+1234567890, @myuser)
-  work (+0987654321, @workuser)
-```
+{{< snippet "profiles/list.md" >}}
 
 The `*` marks the currently active profile. JSON output is the default and includes an `active` field.
 
 ### Switch profile for current directory
 
-```bash
-tgs profile switch work
-```
+{{< snippet "profiles/switch.md" >}}
 
 This creates or overwrites `.tgs.yaml` in the current directory.
 
 ### Delete a profile
 
-```bash
-tgs profile delete old-account
-```
+{{< snippet "profiles/delete.md" >}}
 
-Deletes the profile directory and its session database. You cannot delete the currently active profile — switch to another profile first:
-
-```bash
-tgs profile switch default
-tgs profile delete work
-```
+Deletes the profile directory and its session database. You cannot delete the currently active profile — switch to another profile first.
 
 ### Check current profile and account
 
-```bash
-tgs whoami
-tgs whoami --output text
-```
-
-Text output:
-
-```
-Profile: work
-User:    John Doe
-Handle:  @johndoe
-Phone:   +1234567890
-ID:      123456789
-```
+{{< snippet "profiles/whoami.md" >}}
 
 `whoami` reads from local storage — it does not connect to Telegram.
 
@@ -94,41 +54,16 @@ ID:      123456789
 
 Set `TGS_PROFILE` to override the profile for a single command or for the whole shell session:
 
-```bash
-# One-off override
-TGS_PROFILE=work tgs whoami
-
-# Override for the shell session
-export TGS_PROFILE=work
-```
+{{< snippet "profiles/env.md" >}}
 
 The `--profile` flag always takes precedence over `TGS_PROFILE`.
 
 ## Practical Examples
 
-### Use a work account for one command
-
-```bash
-tgs --profile work search "design review"
-```
-
-### Set up a project directory
-
-```bash
-mkdir ~/projects/client-x && cd ~/projects/client-x
-tgs login --type code --profile client-x
-tgs profile switch client-x
-# All tgs commands in this directory now use client-x
-```
-
-### Check what profile is active
-
-```bash
-tgs whoami --output text
-```
+{{< snippet "profiles/practical.md" >}}
 
 ## Full Reference
 
-- [tgs profile](/reference/commands/profile/) — list, switch, delete subcommands
-- [tgs whoami](/reference/commands/whoami/) — show current account info
-- [Environment Variables](/reference/environment/) — all supported env vars
+- [tgs profile]({{< relref "/reference/commands/profile" >}}) — list, switch, delete subcommands
+- [tgs whoami]({{< relref "/reference/commands/whoami" >}}) — show current account info
+- [Environment Variables]({{< relref "/reference/environment" >}}) — all supported env vars

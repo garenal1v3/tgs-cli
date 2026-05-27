@@ -7,33 +7,27 @@ weight: 25
 
 Показывает текущий профиль и информацию об аккаунте. Читает данные из локального хранилища — подключение к Telegram не требуется.
 
-## Использование
+## Синопсис
 
-```
-tgs whoami [flags]
-```
+{{< snippet "cmd-whoami/synopsis.md" >}}
 
 ## Флаги
 
-| Флаг | Краткий | По умолчанию | Описание |
-|------|---------|--------------|----------|
-| `--profile` | `-p` | (определяется автоматически) | Профиль для проверки |
-| `--output` | `-o` | `json` | Формат вывода: `json`, `text` |
+{{< snippet "cmd-whoami/flags.md" >}}
+
+Порядок определения профиля, если `--profile` не указан: переменная `TGS_PROFILE` -> файл `.tgs.yaml` -> `"default"`.
 
 ## Примеры
 
-```bash
-tgs whoami
-tgs whoami --output text
-tgs whoami --profile work
-```
+{{< snippet "cmd-whoami/examples.md" >}}
 
-Пример вывода в текстовом формате:
+## Вывод
 
-```
-Profile: work
-User:    Иван Иванов
-Handle:  @ivanov
-Phone:   +71234567890
-ID:      123456789
-```
+{{< snippet "cmd-whoami/output.md" >}}
+
+Если профиль существует, но вход не выполнен, поле `user` будет `null` (JSON) или `"Not logged in"` (текст).
+
+## Смотрите также
+
+- [tgs profile]({{< relref "/reference/commands/profile" >}})
+- [Руководство по профилям]({{< relref "/guide/profiles" >}})

@@ -5,40 +5,27 @@ weight: 10
 
 # tgs login
 
-Аутентификация в Telegram.
+Аутентификация в Telegram. Сессия сохраняется локально и используется всеми последующими командами.
 
-## Использование
+## Синопсис
 
-```
-tgs login [flags]
-```
+{{< snippet "cmd-login/synopsis.md" >}}
 
 ## Флаги
 
-| Флаг | Краткий | По умолчанию | Описание |
-|------|---------|--------------|----------|
-| `--type` | `-T` | `desktop` | Метод входа: `desktop`, `code`, `qr` |
-| `--desktop-dir` | `-d` | (автоопределение) | Путь к директории tdata Telegram Desktop |
-| `--passcode` | | | Пароль Telegram Desktop |
-| `--phone` | | | Номер телефона (для метода `code`) |
-| `--profile` | `-p` | (определяется автоматически) | Профиль для входа |
+{{< snippet "cmd-login/flags.md" >}}
+
+Порядок определения профиля, если `--profile` не указан: переменная `TGS_PROFILE` -> файл `.tgs.yaml` -> `"default"`.
 
 ## Примеры
 
-```bash
-# Импорт из Telegram Desktop
-tgs login
+{{< snippet "cmd-login/examples.md" >}}
 
-# Телефон + код
-tgs login --type code --phone +71234567890
+## Методы аутентификации
 
-# QR-код
-tgs login --type qr
+{{< snippet "cmd-login/methods.md" >}}
 
-# Вход в конкретный профиль
-tgs login --profile work --type code
+## Смотрите также
 
-# Telegram Desktop с кастомным путём и паролем
-tgs login --desktop-dir ~/snap/telegram-desktop/current/.local/share/TelegramDesktop/tdata
-tgs login --passcode SECRET
-```
+- [tgs logout]({{< relref "/reference/commands/logout" >}})
+- [Руководство по аутентификации]({{< relref "/getting-started/authentication" >}})

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/gotd/td/telegram"
@@ -9,9 +10,7 @@ import (
 	"github.com/gotd/td/tg"
 )
 
-// loginCode performs authentication via phone number + SMS/app code with optional
-// 2FA password. Must be called from inside client.Run().
-func loginCode(ctx context.Context, client *telegram.Client, phone string) error {
+func loginCode(ctx context.Context, client *telegram.Client, phone, code, password string) error {
 	if phone == "" {
 		var err error
 		phone, err = prompt("Phone number: ")
@@ -20,35 +19,73 @@ func loginCode(ctx context.Context, client *telegram.Client, phone string) error
 		}
 	}
 
-	flow := tdauth.NewFlow(
-		terminalAuth{phone: phone},
-		tdauth.SendCodeOptions{},
-	)
+	var auth tdauth.UserAuthenticator
+	if code != "" {
+		auth = flagAuth{phone: phone, code: code, password: password}
+	} else {
+		auth = codeRequestAuth{phone: phone}
+	}
 
-	return client.Auth().IfNecessary(ctx, flow)
+	flow := tdauth.NewFlow(auth, tdauth.SendCodeOptions{})
+	err := client.Auth().IfNecessary(ctx, flow)
+	if err != nil && errors.Is(err, ErrCodeSent) {
+		return ErrCodeSent
+	}
+	return err
 }
 
-// terminalAuth implements tdauth.UserAuthenticator by prompting the terminal.
-type terminalAuth struct {
-	phone string
+// flagAuth implements UserAuthenticator using values from CLI flags (fully non-interactive).
+type flagAuth struct {
+	phone    string
+	code     string
+	password string
 }
 
-func (a terminalAuth) Phone(_ context.Context) (string, error) {
+func (a flagAuth) Phone(_ context.Context) (string, error) {
 	return a.phone, nil
 }
 
-func (a terminalAuth) Code(_ context.Context, _ *tg.AuthSentCode) (string, error) {
-	return prompt("Code: ")
+func (a flagAuth) Code(_ context.Context, _ *tg.AuthSentCode) (string, error) {
+	return a.code, nil
 }
 
-func (a terminalAuth) Password(_ context.Context) (string, error) {
-	return promptPassword("2FA Password: ")
+func (a flagAuth) Password(_ context.Context) (string, error) {
+	if a.password == "" {
+		return "", fmt.Errorf("2FA password required: use --password flag")
+	}
+	return a.password, nil
 }
 
-func (a terminalAuth) AcceptTermsOfService(_ context.Context, _ tg.HelpTermsOfService) error {
+func (a flagAuth) AcceptTermsOfService(_ context.Context, _ tg.HelpTermsOfService) error {
 	return nil
 }
 
-func (a terminalAuth) SignUp(_ context.Context) (tdauth.UserInfo, error) {
+func (a flagAuth) SignUp(_ context.Context) (tdauth.UserInfo, error) {
+	return tdauth.UserInfo{}, fmt.Errorf("sign up not supported; use an existing Telegram account")
+}
+
+// codeRequestAuth sends the code and then returns ErrCodeSent from Code().
+// Used for step 1 of the two-step non-interactive flow.
+type codeRequestAuth struct {
+	phone string
+}
+
+func (a codeRequestAuth) Phone(_ context.Context) (string, error) {
+	return a.phone, nil
+}
+
+func (a codeRequestAuth) Code(_ context.Context, _ *tg.AuthSentCode) (string, error) {
+	return "", ErrCodeSent
+}
+
+func (a codeRequestAuth) Password(_ context.Context) (string, error) {
+	return "", ErrCodeSent
+}
+
+func (a codeRequestAuth) AcceptTermsOfService(_ context.Context, _ tg.HelpTermsOfService) error {
+	return nil
+}
+
+func (a codeRequestAuth) SignUp(_ context.Context) (tdauth.UserInfo, error) {
 	return tdauth.UserInfo{}, fmt.Errorf("sign up not supported; use an existing Telegram account")
 }

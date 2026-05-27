@@ -36,10 +36,17 @@ func ParseMethod(s string) (Method, error) {
 	}
 }
 
+// ErrCodeSent is returned when the verification code has been sent but no
+// --code flag was provided. The caller should exit cleanly and instruct the
+// user/agent to re-run with --code.
+var ErrCodeSent = fmt.Errorf("verification code sent")
+
 // Options holds parameters for the Login function.
 type Options struct {
 	Method     Method
 	Phone      string
+	Code       string
+	Password   string
 	DesktopDir string
 	Passcode   string
 
@@ -66,7 +73,7 @@ func Login(ctx context.Context, client *telegram.Client, opts Options) error {
 	case MethodDesktop:
 		return loginDesktop(ctx, client, opts.Storage, opts.DesktopDir, opts.Passcode)
 	case MethodCode:
-		return loginCode(ctx, client, opts.Phone)
+		return loginCode(ctx, client, opts.Phone, opts.Code, opts.Password)
 	case MethodQR:
 		return loginQR(ctx, client, opts.LoggedIn)
 	default:

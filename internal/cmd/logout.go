@@ -30,17 +30,24 @@ func runLogout(cmd *cobra.Command, _ []string) error {
 
 	profileName := profile.Resolve(flagProfile, cwd)
 
-	client, err := telegram.New(profileName)
+	client, err := telegram.Open(profileName)
 	if err != nil {
-		return fmt.Errorf("create telegram client: %w", err)
+		return fmt.Errorf("open session: %w", err)
 	}
-	defer func() { _ = client.Close() }()
+	if client == nil {
+		return fmt.Errorf("profile %q is not logged in", profileName)
+	}
 
 	if err := client.Run(context.Background(), func(ctx context.Context, api *tg.Client) error {
 		_, err := api.AuthLogOut(ctx)
 		return err
 	}); err != nil {
 		return fmt.Errorf("logout: %w", err)
+	}
+
+	_ = client.Close()
+	if err := profile.Delete(profileName); err != nil {
+		return fmt.Errorf("clear local session: %w", err)
 	}
 
 	if flagOutput == "text" {

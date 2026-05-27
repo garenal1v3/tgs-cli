@@ -1,102 +1,75 @@
 ---
-title: "多账号管理"
+title: 配置文件
 weight: 20
 ---
 
-# 多账号管理
+# 配置文件
 
-tgs 支持多个 Telegram 账号，通过配置文件（profiles）进行管理。每个配置文件独立存储会话和设置，类似于 AWS CLI 的工作方式。
+tgs 通过配置文件支持多个 Telegram 账户——类似于 AWS CLI 管理凭证的方式。每个配置文件拥有独立的会话，存储在单独的数据库文件中。
 
-## 创建配置文件
+## 配置文件解析顺序
 
-登录时通过 `--profile` 参数指定配置文件名称：
+运行任何 tgs 命令时，活跃配置文件按以下优先级确定（从高到低）：
 
-```bash
-tgs login --profile work
-tgs login --profile personal
-tgs login --profile client-acme
-```
-
-如果不指定，则使用默认配置文件 `default`：
-
-```bash
-tgs login  # 等同于 tgs login --profile default
-```
-
-## 切换配置文件
-
-### 使用命令切换
-
-```bash
-tgs profile switch work
-```
-
-切换后，后续所有命令都将使用 `work` 配置文件。
-
-### 使用 --profile 参数
-
-在任意命令中临时指定配置文件，不影响全局设置：
-
-```bash
-tgs whoami --profile personal
-tgs search "关键词" --profile work
-```
-
-## 查看所有配置文件
-
-```bash
-tgs profile list
-```
-
-示例输出：
-
-```json
-[
-  {"name": "default", "active": true},
-  {"name": "work", "active": false},
-  {"name": "personal", "active": false}
-]
-```
-
-## 删除配置文件
-
-```bash
-tgs profile delete work
-```
-
-此操作会删除该配置文件的会话数据。操作不可逆，请谨慎使用。
-
-## 通过 .tgs.yaml 配置
-
-可以在项目目录中创建 `.tgs.yaml` 文件来指定默认配置文件。tgs 会从当前目录向上查找该文件：
-
-```yaml
-# .tgs.yaml
-profile: work
-```
-
-这样在该项目目录下运行 tgs 时，会自动使用 `work` 配置文件，无需每次指定 `--profile`。
-
-## 通过环境变量配置
-
-设置 `TGS_PROFILE` 环境变量来指定配置文件：
-
-```bash
-export TGS_PROFILE=work
-tgs whoami  # 使用 work 配置文件
-```
-
-## 配置文件优先级
-
-当多种方式同时存在时，tgs 按以下优先级解析配置文件（从高到低）：
-
-1. `--profile` 命令行参数
+1. 传递给命令的 `--profile` 参数
 2. `TGS_PROFILE` 环境变量
-3. 当前目录或父目录中的 `.tgs.yaml`
-4. 默认值 `default`
+3. 当前目录或父目录中的 `.tgs.yaml` 文件
+4. `"default"`（默认值）
 
-## 参考
+## 按目录绑定配置文件
 
-- [tgs profile 命令参考](/zh/reference/commands/profile/)
-- [tgs login 命令参考](/zh/reference/commands/login/)
-- [环境变量参考](/zh/reference/environment/)
+您可以通过创建 `.tgs.yaml` 文件将配置文件绑定到特定目录。使用 `tgs profile switch` 可自动完成此操作：
+
+{{< snippet "profiles/switch-yaml.md" >}}
+
+tgs 会沿目录树向上查找 `.tgs.yaml`，因此它在所有子目录中同样生效。这是为不同项目使用不同账户的推荐方式。
+
+## 管理配置文件
+
+### 列出配置文件
+
+{{< snippet "profiles/list.md" >}}
+
+`*` 标记当前活跃的配置文件。默认使用 JSON 格式输出，包含 `active` 字段。
+
+### 切换当前目录的配置文件
+
+{{< snippet "profiles/switch.md" >}}
+
+在当前目录创建或覆盖 `.tgs.yaml` 文件。
+
+### 删除配置文件
+
+{{< snippet "profiles/delete.md" >}}
+
+删除配置文件目录及其会话数据库。无法删除当前活跃的配置文件——请先切换到其他配置文件。
+
+### 查看当前配置文件和账号
+
+{{< snippet "profiles/whoami.md" >}}
+
+`whoami` 从本地存储读取数据——无需连接 Telegram。
+
+## 环境变量
+
+设置 `TGS_PROFILE` 可为单个命令或整个 shell 会话覆盖配置文件：
+
+{{< snippet "profiles/env.md" >}}
+
+`--profile` 参数始终优先于 `TGS_PROFILE`。
+
+## 实用示例
+
+### 临时使用工作账号
+
+### 设置项目目录
+
+### 查看当前配置文件
+
+{{< snippet "profiles/practical.md" >}}
+
+## 完整参考
+
+- [tgs profile]({{< relref "/reference/commands/profile" >}}) — list、switch、delete 子命令
+- [tgs whoami]({{< relref "/reference/commands/whoami" >}}) — 查看当前账户信息
+- [环境变量]({{< relref "/reference/environment" >}}) — 所有支持的环境变量

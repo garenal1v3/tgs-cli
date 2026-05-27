@@ -1,106 +1,30 @@
 ---
-title: "环境变量"
+title: 环境变量
 weight: 50
 ---
 
 # 环境变量
 
-tgs 支持通过环境变量进行配置，方便在 CI/CD、Docker 容器或脚本中使用。
+所有 tgs 环境变量均为可选。它们会覆盖编译时的默认值或配置文件中的值。
 
 ## 变量列表
 
-### TGS_API_ID
+{{< snippet "env/table.md" >}}
 
-Telegram API 的应用 ID。
+## 配置文件选择
 
-```bash
-export TGS_API_ID=12345678
-```
+{{< snippet "env/profile-usage.md" >}}
 
-可在 [https://my.telegram.org/apps](https://my.telegram.org/apps) 申请。优先级高于配置文件中的设置。
+完整优先级链详见[配置文件解析顺序]({{< relref "/guide/profiles#how-profile-resolution-works" >}})。
 
----
+## API 凭证
 
-### TGS_API_HASH
+tgs 内置了编译时的 API 凭证，大多数用户无需设置。如果您从源码构建且未包含凭证，或者希望使用自己的 Telegram 应用凭证，可以进行覆盖。
 
-Telegram API 的应用哈希值。
+{{< snippet "env/api-usage.md" >}}
 
-```bash
-export TGS_API_HASH=abcdef1234567890abcdef1234567890
-```
+在 [my.telegram.org](https://my.telegram.org) 获取 API 凭证。
 
-与 `TGS_API_ID` 配合使用。可在 [https://my.telegram.org/apps](https://my.telegram.org/apps) 申请。
+## 自定义目录
 
----
-
-### TGS_PROFILE
-
-指定默认使用的账号配置文件名称。
-
-```bash
-export TGS_PROFILE=work
-```
-
-优先级低于 `--profile` 命令行参数，高于 `.tgs.yaml` 文件配置。
-
----
-
-### TGS_CONFIG_DIR
-
-自定义配置文件存储目录。默认路径：
-
-- **Linux**: `~/.config/tgs/`
-- **macOS**: `~/Library/Application Support/tgs/`
-- **Windows**: `%APPDATA%\tgs\`
-
-```bash
-export TGS_CONFIG_DIR=/custom/path/tgs/config
-```
-
----
-
-### TGS_DATA_DIR
-
-自定义数据（会话文件等）存储目录。默认路径：
-
-- **Linux**: `~/.local/share/tgs/`
-- **macOS**: `~/Library/Application Support/tgs/`
-- **Windows**: `%APPDATA%\tgs\`
-
-```bash
-export TGS_DATA_DIR=/custom/path/tgs/data
-```
-
-## 配置优先级
-
-各配置来源的优先级从高到低：
-
-1. 命令行参数（如 `--profile`、`--type`）
-2. 环境变量（如 `TGS_PROFILE`）
-3. `.tgs.yaml` 项目配置文件
-4. 全局配置文件（`TGS_CONFIG_DIR` 中）
-5. 内置默认值
-
-## 使用示例
-
-### 在 CI/CD 中使用
-
-```bash
-export TGS_API_ID=$SECRET_API_ID
-export TGS_API_HASH=$SECRET_API_HASH
-export TGS_PROFILE=ci-bot
-tgs whoami
-```
-
-### 在 Docker 中使用
-
-```dockerfile
-ENV TGS_API_ID=12345678
-ENV TGS_API_HASH=abcdef1234567890abcdef1234567890
-ENV TGS_DATA_DIR=/data/tgs
-```
-
-## 参考
-
-- [身份验证快速开始](/zh/getting-started/authentication/)
-- [多账号管理](/zh/guide/profiles/)
+{{< snippet "env/dirs-usage.md" >}}

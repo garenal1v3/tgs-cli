@@ -7,43 +7,43 @@ weight: 20
 
 Управление профилями аккаунтов.
 
+## Синопсис
+
+{{< snippet "cmd-profile/synopsis.md" >}}
+
 ## Подкоманды
 
 ### tgs profile list
 
 Список всех профилей с информацией об аккаунтах.
 
-```bash
-tgs profile list
-tgs profile list --output json
-```
+{{< snippet "cmd-profile/list.md" >}}
 
-Активный профиль отмечен звёздочкой (`*`).
+Активный профиль в текстовом выводе отмечен символом `*`.
+
+В формате JSON каждый профиль содержит поле `active` типа boolean.
+
+---
 
 ### tgs profile switch
 
-Устанавливает активный профиль для текущей директории, записывая `.tgs.yaml`.
+Устанавливает активный профиль для текущей директории, записывая файл `.tgs.yaml`.
 
-```bash
-tgs profile switch <name>
-```
+{{< snippet "cmd-profile/switch.md" >}}
 
-Пример:
+Все команды tgs, выполняемые в этой директории (и вложенных), будут использовать указанный профиль.
 
-```bash
-tgs profile switch work
-```
+---
 
 ### tgs profile delete
 
-Удаляет профиль и все его данные сессии. Нельзя удалить активный профиль.
+Удаляет профиль и его локальную базу данных сессии.
 
-```bash
-tgs profile delete <name>
-```
+{{< snippet "cmd-profile/delete.md" >}}
 
-Пример:
+Нельзя удалить текущий активный профиль. Сначала переключитесь на другой:
 
-```bash
-tgs profile delete old-account
-```
+## Смотрите также
+
+- [tgs whoami]({{< relref "/reference/commands/whoami" >}})
+- [Руководство по профилям]({{< relref "/guide/profiles" >}})

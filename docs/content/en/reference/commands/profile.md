@@ -9,9 +9,7 @@ Manage account profiles.
 
 ## Synopsis
 
-```
-tgs profile <subcommand> [flags]
-```
+{{< snippet "cmd-profile/synopsis.md" >}}
 
 ## Subcommands
 
@@ -19,31 +17,9 @@ tgs profile <subcommand> [flags]
 
 List all profiles with their associated account information.
 
-```
-tgs profile list [flags]
-```
+{{< snippet "cmd-profile/list.md" >}}
 
-**Flags:**
-
-| Flag | Short | Default | Description |
-|------|-------|---------|-------------|
-| `--output` | `-o` | `json` | Output format: `json`, `text` |
-
-**Examples:**
-
-```bash
-tgs profile list
-tgs profile list --output text
-```
-
-Text output marks the active profile with `*`:
-
-```
-* default (+1234567890, @myuser)
-  work (+0987654321, @workuser)
-```
-
-JSON output includes an `active` boolean field per profile.
+Text output marks the active profile with `*`. JSON output includes an `active` boolean field per profile.
 
 ---
 
@@ -51,22 +27,7 @@ JSON output includes an `active` boolean field per profile.
 
 Set the active profile for the current directory by writing a `.tgs.yaml` file.
 
-```
-tgs profile switch <name>
-```
-
-**Examples:**
-
-```bash
-tgs profile switch work
-tgs profile switch default
-```
-
-Creates or overwrites `.tgs.yaml` in the current directory with:
-
-```yaml
-profile: <name>
-```
+{{< snippet "cmd-profile/switch.md" >}}
 
 All tgs commands run in this directory (and subdirectories) will use the specified profile.
 
@@ -76,24 +37,11 @@ All tgs commands run in this directory (and subdirectories) will use the specifi
 
 Delete a profile and its local session database.
 
-```
-tgs profile delete <name>
-```
+{{< snippet "cmd-profile/delete.md" >}}
 
-**Examples:**
-
-```bash
-tgs profile delete old-account
-```
-
-You cannot delete the currently active profile. Switch to a different profile first:
-
-```bash
-tgs profile switch default
-tgs profile delete work
-```
+You cannot delete the currently active profile. Switch to a different profile first.
 
 ## See Also
 
-- [tgs whoami](/reference/commands/whoami/)
-- [Profiles guide](/guide/profiles/)
+- [tgs whoami]({{< relref "/reference/commands/whoami" >}})
+- [Profiles guide]({{< relref "/guide/profiles" >}})

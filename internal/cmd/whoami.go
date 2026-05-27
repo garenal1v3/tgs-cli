@@ -28,15 +28,18 @@ func runWhoami(cmd *cobra.Command, _ []string) error {
 
 	profileName := profile.Resolve(flagProfile, cwd)
 
-	client, err := telegram.New(profileName)
+	client, err := telegram.Open(profileName)
 	if err != nil {
 		return fmt.Errorf("open session: %w", err)
 	}
-	defer func() { _ = client.Close() }()
 
-	info, err := client.LoadMeta()
-	if err != nil {
-		return fmt.Errorf("load user info: %w", err)
+	var info *telegram.UserInfo
+	if client != nil {
+		defer func() { _ = client.Close() }()
+		info, err = client.LoadMeta()
+		if err != nil {
+			return fmt.Errorf("load user info: %w", err)
+		}
 	}
 
 	if flagOutput == "text" {

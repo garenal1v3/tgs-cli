@@ -16,8 +16,8 @@ import (
 )
 
 var (
-	defaultAPIID   = "0"
-	defaultAPIHash = ""
+	defaultAPIID   = "2040"
+	defaultAPIHash = "b18441a1ff607e10a989891a5462e627"
 )
 
 // UserInfo holds basic info about the authenticated user.
@@ -51,11 +51,30 @@ func apiCredentials() (int, string) {
 	return id, hash
 }
 
-// New creates a new Client for the given profile.
+// New creates a new Client for the given profile, creating the profile directory if needed.
 func New(profileName string) (*Client, error) {
 	dbPath := config.ProfileDir(profileName) + "/session.db"
 	sess, err := storage.NewSession(dbPath)
 	if err != nil {
+		return nil, fmt.Errorf("open session storage: %w", err)
+	}
+
+	apiID, apiHash := apiCredentials()
+	api := telegram.NewClient(apiID, apiHash, telegram.Options{
+		SessionStorage: sess,
+	})
+
+	return &Client{api: api, session: sess}, nil
+}
+
+// Open opens an existing profile for read-only access. Returns nil client if the profile does not exist.
+func Open(profileName string) (*Client, error) {
+	dbPath := config.ProfileDir(profileName) + "/session.db"
+	sess, err := storage.OpenSession(dbPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
 		return nil, fmt.Errorf("open session storage: %w", err)
 	}
 

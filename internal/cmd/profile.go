@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/spf13/cobra"
 
@@ -70,16 +71,20 @@ func runProfileList(cmd *cobra.Command, _ []string) error {
 		Name     string `json:"name"`
 		Phone    string `json:"phone,omitempty"`
 		Username string `json:"username,omitempty"`
-		UserID   string `json:"user_id,omitempty"`
+		ID       int64  `json:"id,omitempty"`
 		Active   bool   `json:"active"`
 	}
 	result := make([]profileJSON, 0, len(profiles))
 	for _, p := range profiles {
+		var id int64
+		if p.UserID != "" {
+			id, _ = strconv.ParseInt(p.UserID, 10, 64)
+		}
 		result = append(result, profileJSON{
 			Name:     p.Name,
 			Phone:    p.Phone,
 			Username: p.Username,
-			UserID:   p.UserID,
+			ID:       id,
 			Active:   p.Name == active,
 		})
 	}

@@ -1,0 +1,3 @@
+```
+tgs profile <subcommand> [flags]
+```

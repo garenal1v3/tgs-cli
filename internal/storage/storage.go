@@ -46,6 +46,21 @@ func NewSession(dbPath string) (*Session, error) {
 	return &Session{db: db}, nil
 }
 
+// OpenSession opens an existing session database. Returns os.ErrNotExist if the file does not exist.
+// Unlike NewSession, it does not create the directory or file.
+func OpenSession(dbPath string) (*Session, error) {
+	if _, err := os.Stat(dbPath); err != nil {
+		return nil, err
+	}
+
+	db, err := bolt.Open(dbPath, 0o600, &bolt.Options{Timeout: 1 * time.Second})
+	if err != nil {
+		return nil, fmt.Errorf("open bolt db: %w", err)
+	}
+
+	return &Session{db: db}, nil
+}
+
 func (s *Session) LoadSession(_ context.Context) ([]byte, error) {
 	var data []byte
 	err := s.db.View(func(tx *bolt.Tx) error {

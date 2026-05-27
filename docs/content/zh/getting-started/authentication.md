@@ -1,85 +1,76 @@
 ---
-title: "身份验证"
+title: 身份验证
 weight: 10
 ---
 
 # 身份验证
 
-在使用 tgs 之前，您需要通过身份验证将其连接到您的 Telegram 账户。tgs 支持三种登录方式，适用于不同的使用场景。
+tgs 通过 MTProto 协议使用您的真实用户账户连接到 Telegram。每个配置文件只需认证一次——会话保存在本地，后续命令自动复用。
 
 ## 快速开始
 
-最简单的登录方式是从现有的 Telegram Desktop 客户端导入会话：
+默认方式是从已有的 Telegram Desktop 客户端导入会话：
 
-```bash
-tgs login
-```
+{{< snippet "auth/quick-start.md" >}}
 
-这将自动检测您的 Telegram Desktop 数据目录并导入会话。成功后，您可以立即开始使用 tgs。
+或选择其他登录方式：
 
-验证登录是否成功：
+{{< snippet "auth/methods-alt.md" >}}
 
-```bash
-tgs whoami
-```
+## 登录方式
 
-## 三种登录方式
+### Desktop 导入（默认）
 
-### 方式一：从 Telegram Desktop 导入（默认）
+从 Telegram Desktop 导入现有会话。tgs 会自动检测 macOS、Linux 和 Windows 上的 tdata 目录。
 
-如果您已安装 Telegram Desktop，这是最便捷的方式。tgs 会直接读取本地会话文件，无需重新输入凭证。
+{{< snippet "auth/desktop.md" >}}
 
-```bash
-tgs login --type desktop
-```
+无需输入手机号或验证码——会话直接传输。
 
-如果 tgs 找不到您的 Telegram Desktop 数据目录，可以手动指定路径：
+### 手机验证码
 
-```bash
-tgs login --type desktop --desktop-dir /path/to/tdata
-```
+通过手机号进行交互式登录，支持两步验证（云密码）。
 
-如果您的 Telegram Desktop 设置了本地密码（passcode），请提供：
+{{< snippet "auth/code-login.md" >}}
 
-```bash
-tgs login --type desktop --passcode 您的密码
-```
+tgs 会提示输入 Telegram 发送的验证码。如果启用了两步验证，还会要求输入云密码。
 
-### 方式二：手机验证码登录
+### 非交互式登录（适用于 AI 代理）
 
-通过向您的手机号码发送验证码进行身份验证。适用于没有安装 Telegram Desktop 的环境。
+`code` 方式支持完全非交互的两步登录流程。这是 AI 代理和自动化工具的推荐方式。
 
-```bash
-tgs login --type code --phone +79001234567
-```
+{{< snippet "auth/code-login.md" >}}
 
-tgs 会提示您输入收到的验证码。如果账户启用了两步验证，还会要求输入密码。
+如果启用了两步验证，请在第 2 步中传入 `--password`。
 
-### 方式三：二维码登录
+### 二维码
 
-通过手机扫描二维码进行身份验证。适合在终端中快速登录。
+在终端中显示二维码，使用其他设备上的 Telegram 应用扫描即可。
 
-```bash
-tgs login --type qr
-```
+{{< snippet "auth/qr-login.md" >}}
 
-tgs 会在终端中显示二维码，使用已登录的 Telegram 手机应用扫描即可。
+扫描后 tgs 会自动完成认证。如果启用了两步验证，将提示输入云密码。
 
-## 首次登录
+## 登录到指定配置文件
 
-首次运行 tgs 时，您还需要提供 Telegram API 凭证。可以通过环境变量设置：
+使用 `--profile` 可登录到指定的命名配置文件。如果配置文件不存在，会自动创建。
 
-```bash
-export TGS_API_ID=12345678
-export TGS_API_HASH=abcdef1234567890abcdef1234567890
-tgs login
-```
+{{< snippet "auth/profile-login.md" >}}
 
-或者在配置文件中设置。详见[环境变量参考](/zh/reference/environment/)。
+多账户设置详见[配置文件]({{< relref "/guide/profiles" >}})。
 
-API 凭证可在 [https://my.telegram.org/apps](https://my.telegram.org/apps) 申请。
+## 验证登录
 
-## 下一步
+登录后，确认当前活跃账户：
 
-- [管理多个账号](/zh/guide/profiles/) — 使用配置文件在多个账号之间切换
-- [tgs login 命令参考](/zh/reference/commands/login/) — 完整的参数说明
+{{< snippet "auth/verify.md" >}}
+
+## 退出登录
+
+{{< snippet "auth/logout.md" >}}
+
+退出登录会在 Telegram 服务器上撤销会话，并清除本地会话数据。
+
+## 完整参数参考
+
+详见 [tgs login]({{< relref "/reference/commands/login" >}}) 和 [tgs logout]({{< relref "/reference/commands/logout" >}}) 的完整参数说明。

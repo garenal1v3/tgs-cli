@@ -9,27 +9,17 @@ Revoke the current session on Telegram servers and clear local session data.
 
 ## Synopsis
 
-```
-tgs logout [flags]
-```
+{{< snippet "cmd-logout/synopsis.md" >}}
 
 ## Flags
 
-| Flag | Short | Default | Description |
-|------|-------|---------|-------------|
-| `--profile` | `-p` | (resolved) | Profile to log out from |
+{{< snippet "cmd-logout/flags.md" >}}
 
 Profile resolution order when `--profile` is not set: `TGS_PROFILE` env → `.tgs.yaml` file → `"default"`.
 
 ## Examples
 
-```bash
-# Logout the current profile
-tgs logout
-
-# Logout a specific profile
-tgs logout --profile work
-```
+{{< snippet "cmd-logout/examples.md" >}}
 
 ## Notes
 
@@ -42,5 +32,5 @@ After logout, you must run `tgs login` again to use tgs with that profile.
 
 ## See Also
 
-- [tgs login](/reference/commands/login/)
-- [Authentication guide](/getting-started/authentication/)
+- [tgs login]({{< relref "/reference/commands/login" >}})
+- [Authentication guide]({{< relref "/getting-started/authentication" >}})

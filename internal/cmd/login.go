@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 
@@ -19,6 +20,8 @@ var (
 	flagDesktopDir string
 	flagPasscode   string
 	flagPhone      string
+	flagCode       string
+	flagPassword   string
 )
 
 func newLoginCmd() *cobra.Command {
@@ -37,6 +40,8 @@ func newLoginCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&flagDesktopDir, "desktop-dir", "d", "", "custom Telegram Desktop tdata path")
 	cmd.Flags().StringVar(&flagPasscode, "passcode", "", "Telegram Desktop local passcode")
 	cmd.Flags().StringVar(&flagPhone, "phone", "", "phone number for code auth (e.g. +12345678900)")
+	cmd.Flags().StringVar(&flagCode, "code", "", "verification code (for non-interactive two-step login)")
+	cmd.Flags().StringVar(&flagPassword, "password", "", "2FA cloud password")
 
 	return cmd
 }
@@ -63,6 +68,8 @@ func runLogin(cmd *cobra.Command, _ []string) error {
 	opts := auth.Options{
 		Method:     method,
 		Phone:      flagPhone,
+		Code:       flagCode,
+		Password:   flagPassword,
 		DesktopDir: flagDesktopDir,
 		Passcode:   flagPasscode,
 	}
@@ -91,8 +98,13 @@ func runLogin(cmd *cobra.Command, _ []string) error {
 
 	// Code/QR: call auth.Login inside Run().
 	var userInfo *telegram.UserInfo
+	var codeSent bool
 	if err := client.Run(context.Background(), func(ctx context.Context, api *tg.Client) error {
 		if err := auth.Login(ctx, client.RawClient(), opts); err != nil {
+			if errors.Is(err, auth.ErrCodeSent) {
+				codeSent = true
+				return nil
+			}
 			return err
 		}
 		info, fetchErr := fetchUserInfo(ctx, api)
@@ -105,6 +117,9 @@ func runLogin(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("login: %w", err)
 	}
 
+	if codeSent {
+		return printCodeSent(cmd, profileName)
+	}
 	return printLoginResult(cmd, profileName, userInfo)
 }
 
@@ -121,13 +136,28 @@ func fetchUserInfo(ctx context.Context, api *tg.Client) (*telegram.UserInfo, err
 	if !ok {
 		return nil, fmt.Errorf("unexpected user type: %T", users[0])
 	}
+	phone := user.Phone
+	if phone != "" && phone[0] != '+' {
+		phone = "+" + phone
+	}
 	return &telegram.UserInfo{
 		ID:        user.ID,
-		Phone:     user.Phone,
+		Phone:     phone,
 		Username:  user.Username,
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
 	}, nil
+}
+
+func printCodeSent(cmd *cobra.Command, profileName string) error {
+	if flagOutput == "text" {
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Verification code sent (profile: %s). Re-run with --code to complete login.\n", profileName)
+		return nil
+	}
+	return json.NewEncoder(cmd.OutOrStdout()).Encode(map[string]string{
+		"profile": profileName,
+		"status":  "code_sent",
+	})
 }
 
 func printLoginResult(cmd *cobra.Command, profileName string, info *telegram.UserInfo) error {

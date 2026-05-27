@@ -1,56 +1,35 @@
 ---
-title: "tgs whoami"
-weight: 40
+title: tgs whoami
+weight: 25
 ---
 
 # tgs whoami
 
-显示当前登录的 Telegram 账号信息。
+显示当前配置文件名称和账户信息。从本地存储读取——无需连接 Telegram。
 
 ## 用法
 
-```
-tgs whoami [参数]
-```
-
-## 描述
-
-`tgs whoami` 返回当前配置文件对应的 Telegram 账号信息，包括用户 ID、用户名和手机号码。可用于验证登录状态或确认当前使用的账号。
+{{< snippet "cmd-whoami/synopsis.md" >}}
 
 ## 参数
 
-| 参数 | 简写 | 类型 | 默认值 | 描述 |
-|------|------|------|--------|------|
-| `--profile` | `-p` | string | `default` | 要查询的账号配置文件名称 |
+{{< snippet "cmd-whoami/flags.md" >}}
+
+未设置 `--profile` 时的配置文件解析顺序：`TGS_PROFILE` 环境变量 → `.tgs.yaml` 文件 → `"default"`。
 
 ## 示例
 
-### 查看默认配置文件的账号
+{{< snippet "cmd-whoami/examples.md" >}}
 
-```bash
-tgs whoami
-```
+## 输出
 
-示例输出：
+**文本输出 (`--output text`)：**
 
-```json
-{
-  "id": 123456789,
-  "username": "myusername",
-  "first_name": "张",
-  "last_name": "三",
-  "phone": "+79001234567"
-}
-```
+{{< snippet "cmd-whoami/output.md" >}}
 
-### 查看指定配置文件的账号
+如果配置文件存在但未登录，`user` 字段在 JSON 中为 `null`，在文本中显示为 `"Not logged in"`。
 
-```bash
-tgs whoami --profile work
-```
+## 另请参阅
 
-## 相关命令
-
-- [tgs login](/zh/reference/commands/login/) — 登录账户
-- [tgs logout](/zh/reference/commands/logout/) — 退出登录
-- [tgs profile](/zh/reference/commands/profile/) — 管理配置文件
+- [tgs profile]({{< relref "/reference/commands/profile" >}})
+- [配置文件指南]({{< relref "/guide/profiles" >}})

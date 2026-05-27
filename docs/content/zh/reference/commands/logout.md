@@ -1,44 +1,36 @@
 ---
-title: "tgs logout"
-weight: 20
+title: tgs logout
+weight: 11
 ---
 
 # tgs logout
 
-退出当前 Telegram 账户登录。
+在 Telegram 服务器上撤销当前会话，并清除本地会话数据。
 
 ## 用法
 
-```
-tgs logout [参数]
-```
-
-## 描述
-
-`tgs logout` 终止与 Telegram 的会话，并删除本地存储的会话数据。退出后，使用 tgs 需要重新运行 `tgs login`。
+{{< snippet "cmd-logout/synopsis.md" >}}
 
 ## 参数
 
-| 参数 | 简写 | 类型 | 默认值 | 描述 |
-|------|------|------|--------|------|
-| `--profile` | `-p` | string | `default` | 要退出的账号配置文件名称 |
+{{< snippet "cmd-logout/flags.md" >}}
+
+未设置 `--profile` 时的配置文件解析顺序：`TGS_PROFILE` 环境变量 → `.tgs.yaml` 文件 → `"default"`。
 
 ## 示例
 
-### 退出默认配置文件
+{{< snippet "cmd-logout/examples.md" >}}
 
-```bash
-tgs logout
-```
+## 说明
 
-### 退出指定配置文件
+退出登录执行两个步骤：
 
-```bash
-tgs logout --profile work
-```
+1. 调用 Telegram API 撤销会话令牌（会话在 Telegram 服务器端失效）
+2. 清除该配置文件的本地会话数据库
 
-## 相关命令
+退出后，必须重新运行 `tgs login` 才能继续使用该配置文件。
 
-- [tgs login](/zh/reference/commands/login/) — 登录账户
-- [tgs whoami](/zh/reference/commands/whoami/) — 查看当前登录账号
-- [tgs profile delete](/zh/reference/commands/profile/) — 删除配置文件及其所有数据
+## 另请参阅
+
+- [tgs login]({{< relref "/reference/commands/login" >}})
+- [身份验证指南]({{< relref "/getting-started/authentication" >}})

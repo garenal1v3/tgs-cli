@@ -1,5 +1,6 @@
 ---
 title: Commands
-description: CLI command reference
 weight: 10
 ---
+
+CLI command reference.

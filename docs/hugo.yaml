@@ -1,28 +1,55 @@
 baseURL: https://garenal1v3.github.io/tgs-cli/
 title: tgs
-
-defaultContentLanguage: en
-enableMissingTranslationPlaceholders: true
 enableGitInfo: true
+
+module:
+  imports:
+    - path: github.com/alex-shpak/hugo-book
+
+markup:
+  highlight:
+    style: onedark
+  goldmark:
+    renderer:
+      unsafe: true
+  tableOfContents:
+    startLevel: 1
+
+params:
+  BookTheme: dark
+  BookRepo: https://github.com/garenal1v3/tgs-cli
+  BookSection: "*"
+  BookSearch: true
+  BookEditPath: edit/develop/docs
+  BookCommitPath: commit
+  BookDateFormat: 2006/01/02
+  BookTranslatedOnly: true
 
 languages:
   en:
     label: English
-    weight: 1
     contentDir: content/en
+    weight: 1
+    menu:
+      before:
+        - name: "GitHub"
+          url: "https://github.com/garenal1v3/tgs-cli"
+          weight: 10
   ru:
     label: Русский
-    weight: 2
     contentDir: content/ru
+    weight: 2
+    menu:
+      before:
+        - name: "GitHub"
+          url: "https://github.com/garenal1v3/tgs-cli"
+          weight: 10
   zh:
-    label: 中文
-    weight: 3
+    label: 简体中文
     contentDir: content/zh
-
-taxonomies:
-  tag: tags
-  category: categories
-
-module:
-  imports:
-    - path: github.com/google/docsy
+    weight: 3
+    menu:
+      before:
+        - name: "GitHub"
+          url: "https://github.com/garenal1v3/tgs-cli"
+          weight: 10
