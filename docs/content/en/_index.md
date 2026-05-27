@@ -1,18 +1,33 @@
 ---
-title: tgs
+title: Introduction
 ---
 
 # tgs
 
-Fast CLI client for searching Telegram via your user account.
+Telegram search from your terminal
 
-## Getting Started
+### Features
 
-Coming soon — the project is in early development.
-
-## Why tgs?
-
-- **Built for agents** — JSON output by default, designed as a tool for AI agents
+- **Built for AI agents** — JSON output by default, designed as a tool for Claude Code, Codex, and other AI assistants
 - **Fast** — the only bottleneck is Telegram API itself
 - **Multi-account** — switch between profiles like AWS CLI
-- **Cross-platform** — single binary for Linux, macOS, Windows
+- **Secure** — imports sessions from Telegram Desktop, no password storage
+- **Cross-platform** — macOS, Linux, Windows
+
+### Install
+
+```bash
+brew install garenal1v3/tap/tgs
+```
+
+Or see [Installation]({{< relref "/getting-started" >}}) for other methods.
+
+### Quick Start
+
+```bash
+# Authenticate (imports Telegram Desktop session)
+tgs login
+
+# Check who you are
+tgs whoami
+```

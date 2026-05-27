@@ -35,3 +35,6 @@ docs/.hugo_build.lock
 # Project
 docs/superpowers/
 .claude/
+
+# tgs per-directory profile config
+.tgs.yaml
