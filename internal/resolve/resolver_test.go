@@ -13,7 +13,7 @@ import (
 // mockAPI implements the API interface for testing.
 type mockAPI struct {
 	resolveUsername func(ctx context.Context, req *tg.ContactsResolveUsernameRequest) (*tg.ContactsResolvedPeer, error)
-	resolvePhone   func(ctx context.Context, phone string) (*tg.ContactsResolvedPeer, error)
+	resolvePhone    func(ctx context.Context, phone string) (*tg.ContactsResolvedPeer, error)
 }
 
 func (m *mockAPI) ContactsResolveUsername(ctx context.Context, req *tg.ContactsResolveUsernameRequest) (*tg.ContactsResolvedPeer, error) {
@@ -143,7 +143,7 @@ func TestResolver_CacheHit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPeerCache: %v", err)
 	}
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 
 	// Pre-populate cache with entry for "durov".
 	entry := CacheEntry{
