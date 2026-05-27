@@ -2,7 +2,6 @@ package search
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -59,6 +58,10 @@ func newMessagesCmd() *cobra.Command {
 			before, err := parseDate(flagBefore)
 			if err != nil {
 				return fmt.Errorf("invalid --before: %w", err)
+			}
+
+			if err := validateLimit(flagLimit); err != nil {
+				return err
 			}
 
 			cwd, err := os.Getwd()
@@ -124,7 +127,7 @@ func newMessagesCmd() *cobra.Command {
 					return err
 				}
 
-				return json.NewEncoder(cmd.OutOrStdout()).Encode(result)
+				return writeSearchResult(cmd.OutOrStdout(), outputFormat(cmd), result)
 			})
 		},
 	}
@@ -158,6 +161,13 @@ func expandChats(flags []string) []string {
 		}
 	}
 	return out
+}
+
+func validateLimit(limit int) error {
+	if limit < 1 || limit > 100 {
+		return fmt.Errorf("--limit must be between 1 and 100, got %d", limit)
+	}
+	return nil
 }
 
 // parseDate parses a date string: empty returns 0, YYYY-MM-DD or unix timestamp.

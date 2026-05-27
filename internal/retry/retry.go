@@ -57,6 +57,9 @@ func (e *PermanentError) Unwrap() error {
 var permanentTypes = []string{
 	"CHANNEL_PRIVATE",
 	"CHAT_ADMIN_REQUIRED",
+	"CHAT_ID_INVALID",
+	"FOLDER_ID_INVALID",
+	"MSG_ID_INVALID",
 	"PEER_ID_INVALID",
 	"USERNAME_INVALID",
 	"USERNAME_NOT_OCCUPIED",

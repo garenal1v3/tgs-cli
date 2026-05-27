@@ -178,7 +178,7 @@ tgs search counters -c @channel
 }
 ```
 
-默认统计所有 14 种过滤器类型。可以通过 `--filters` 指定只统计部分类型：
+默认统计所有 15 种过滤器类型。可以通过 `--filters` 指定只统计部分类型：
 
 ```bash
 tgs search counters -c @channel --filters photo,video,document

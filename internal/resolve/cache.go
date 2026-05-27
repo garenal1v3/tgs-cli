@@ -49,7 +49,7 @@ func NewPeerCache(dbPath string) (*PeerCache, error) {
 	return &PeerCache{db: db, TTL: 24 * time.Hour}, nil
 }
 
-// Store writes a CacheEntry under the given key.
+// Store writes a CacheEntry under the given key and also indexes by numeric ID.
 func (c *PeerCache) Store(key string, entry CacheEntry) error {
 	data, err := json.Marshal(entry)
 	if err != nil {
@@ -57,7 +57,17 @@ func (c *PeerCache) Store(key string, entry CacheEntry) error {
 	}
 
 	return c.db.Update(func(tx *bolt.Tx) error {
-		return tx.Bucket(bucketPeers).Put([]byte(key), data)
+		b := tx.Bucket(bucketPeers)
+		if err := b.Put([]byte(key), data); err != nil {
+			return err
+		}
+		if entry.ID != 0 {
+			idKey := fmt.Sprintf("id:%d", entry.ID)
+			if err := b.Put([]byte(idKey), data); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 }
 

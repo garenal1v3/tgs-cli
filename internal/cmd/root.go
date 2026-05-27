@@ -12,7 +12,6 @@ import (
 var (
 	flagProfile string
 	flagOutput  string
-	flagDebug   bool
 )
 
 func NewRoot() *cobra.Command {
@@ -33,7 +32,6 @@ func NewRoot() *cobra.Command {
 
 	root.PersistentFlags().StringVarP(&flagProfile, "profile", "p", "", "account profile name (default: TGS_PROFILE > .tgs.yaml > \"default\")")
 	root.PersistentFlags().StringVarP(&flagOutput, "output", "o", "json", "output format: json, text")
-	root.PersistentFlags().BoolVar(&flagDebug, "debug", false, "enable debug logging")
 
 	root.AddCommand(newVersionCmd())
 	root.AddCommand(newLoginCmd())

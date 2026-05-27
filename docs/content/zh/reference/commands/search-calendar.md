@@ -45,7 +45,7 @@ tgs search calendar -c @dev_team --filter document
 
 ## 输出
 
-返回 JSON，包含日期条目数组。每个条目包含日期和该日期匹配消息的数量，以及一个代表性消息 ID。
+返回 JSON，包含日期条目数组。每个条目包含日期、该日期匹配消息的数量以及消息 ID 范围（`min_msg_id`、`max_msg_id`）。
 
 ## 另请参阅
 

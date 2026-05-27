@@ -43,7 +43,7 @@ tgs search calendar -c @dev_team --filter document
 
 ## Output
 
-Returns JSON with an array of date entries. Each entry contains a date and the count of matching messages on that date, along with a representative message ID.
+Returns JSON with an array of date entries. Each entry contains a date, the count of matching messages on that date, and a message ID range (`min_msg_id`, `max_msg_id`).
 
 ## See Also
 

@@ -347,6 +347,13 @@ func convertMessage(m *tg.Message, chatMap map[int64]ChatInfo, userMap map[int64
 		pid := peerClassID(m.PeerID)
 		if ci, ok := chatMap[pid]; ok {
 			msg.Chat = ci
+		} else if _, isUser := m.PeerID.(*tg.PeerUser); isUser {
+			ci := ChatInfo{ID: pid, Type: "private"}
+			if ui, ok := userMap[pid]; ok {
+				ci.Title = userDisplayName(ui)
+				ci.Username = ui.Username
+			}
+			msg.Chat = ci
 		} else {
 			msg.Chat = ChatInfo{ID: pid}
 		}
@@ -543,6 +550,17 @@ func peerID(peer tg.InputPeerClass) int64 {
 	default:
 		return 0
 	}
+}
+
+func userDisplayName(ui UserInfo) string {
+	name := ui.FirstName
+	if ui.LastName != "" {
+		if name != "" {
+			name += " "
+		}
+		name += ui.LastName
+	}
+	return name
 }
 
 // peerClassID extracts a numeric ID from a PeerClass.

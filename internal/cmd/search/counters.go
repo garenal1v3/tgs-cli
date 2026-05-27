@@ -2,7 +2,6 @@ package search
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -92,7 +91,7 @@ func newCountersCmd() *cobra.Command {
 					return err
 				}
 
-				return json.NewEncoder(cmd.OutOrStdout()).Encode(result)
+				return writeCountersResult(cmd.OutOrStdout(), outputFormat(cmd), result)
 			})
 		},
 	}

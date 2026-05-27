@@ -2,7 +2,6 @@ package search
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -39,6 +38,20 @@ func newGlobalCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			query := args[0]
 
+			typeFlags := 0
+			if flagChannelsOnly {
+				typeFlags++
+			}
+			if flagGroupsOnly {
+				typeFlags++
+			}
+			if flagUsersOnly {
+				typeFlags++
+			}
+			if typeFlags > 1 {
+				return fmt.Errorf("--channels-only, --groups-only, and --users-only are mutually exclusive")
+			}
+
 			filter, err := search.ParseFilter(flagFilter)
 			if err != nil {
 				return err
@@ -51,6 +64,10 @@ func newGlobalCmd() *cobra.Command {
 			before, err := parseDate(flagBefore)
 			if err != nil {
 				return fmt.Errorf("invalid --before: %w", err)
+			}
+
+			if err := validateLimit(flagLimit); err != nil {
+				return err
 			}
 
 			cwd, err := os.Getwd()
@@ -91,7 +108,7 @@ func newGlobalCmd() *cobra.Command {
 					return err
 				}
 
-				return json.NewEncoder(cmd.OutOrStdout()).Encode(result)
+				return writeSearchResult(cmd.OutOrStdout(), outputFormat(cmd), result)
 			})
 		},
 	}

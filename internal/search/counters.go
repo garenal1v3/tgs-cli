@@ -57,8 +57,6 @@ func (s *Service) GetCounters(ctx context.Context, req CountersRequest) (*Counte
 	return &CountersResult{Counters: entries}, nil
 }
 
-// allFilters returns a slice of all 14 non-empty filter instances
-// (one per filter type supported by Telegram).
 func allFilters() []tg.MessagesFilterClass {
 	return []tg.MessagesFilterClass{
 		&tg.InputMessagesFilterPhotos{},
@@ -75,6 +73,7 @@ func allFilters() []tg.MessagesFilterClass {
 		&tg.InputMessagesFilterPinned{},
 		&tg.InputMessagesFilterMyMentions{},
 		&tg.InputMessagesFilterPhoneCalls{},
+		&tg.InputMessagesFilterChatPhotos{},
 	}
 }
 

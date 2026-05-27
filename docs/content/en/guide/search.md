@@ -157,7 +157,7 @@ Get search results grouped by date -- useful for understanding when specific con
 tgs search calendar -c @mychannel --filter photo
 ```
 
-Both `--chat` and `--filter` are required for calendar queries. The response contains a list of dates with the corresponding message count and a representative message ID for each date.
+Both `--chat` and `--filter` are required for calendar queries. The response contains a list of dates with the corresponding message count and a message ID range (`min_msg_id`, `max_msg_id`) for each date.
 
 ## Cursor Pagination
 
@@ -170,7 +170,7 @@ Each search response includes a `cursor` field (empty string if there are no mor
 tgs search messages "update" -c @news --limit 10
 
 # Next page using the cursor from the previous response
-tgs search messages "update" -c @news --limit 10 --cursor "eyJvZmZzZXQiOjEwfQ=="
+tgs search messages "update" -c @news --limit 10 --cursor "eyJvIjo1MCwiZCI6MH0"
 ```
 
 The `--limit` flag controls page size (1-100, default 50).
@@ -188,7 +188,7 @@ while true; do
 
   echo "$result" | jq '.messages[]'
 
-  cursor=$(echo "$result" | jq -r '.cursor // empty')
+  cursor=$(echo "$result" | jq -r '.cursor? // empty')
   [ -z "$cursor" ] && break
 done
 ```
@@ -207,6 +207,8 @@ tgs accepts multiple formats for identifying chats, users, and groups:
 | Phone number | `+79001234567` | International phone format (7+ digits) |
 
 All of these work in `--chat`, `--from`, and any other flag that accepts a peer reference.
+
+> **Note:** Invite links (`t.me/+hash`) are not supported for search.
 
 tgs caches resolved peers locally to avoid redundant API calls. Use `--no-cache` to bypass the cache if you suspect stale data.
 

@@ -68,7 +68,7 @@ tgs search messages "outage" -c @incidents --after 2025-01-01 --before 2025-06-0
 Пагинация результатов:
 
 ```bash
-tgs search messages "bug" -c @dev -l 10 --cursor "eyJvZmZzZXQiOjEwfQ=="
+tgs search messages "bug" -c @dev -l 10 --cursor "eyJvIjo1MCwiZCI6MH0"
 ```
 
 ## Вывод

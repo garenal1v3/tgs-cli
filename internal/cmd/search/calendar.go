@@ -2,7 +2,6 @@ package search
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -85,7 +84,7 @@ func newCalendarCmd() *cobra.Command {
 					return err
 				}
 
-				return json.NewEncoder(cmd.OutOrStdout()).Encode(result)
+				return writeCalendarResult(cmd.OutOrStdout(), outputFormat(cmd), result)
 			})
 		},
 	}

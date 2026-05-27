@@ -39,7 +39,7 @@ func (r *Resolver) Resolve(ctx context.Context, input string) (tg.InputPeerClass
 	case InputPhone:
 		return r.resolvePhone(ctx, pi.Value)
 	case InputID:
-		return idToPeer(pi.ID), nil
+		return r.resolveID(pi.ID), nil
 	case InputInvite:
 		return nil, fmt.Errorf("invite links are not supported for search")
 	default:
@@ -185,11 +185,26 @@ func entryToPeer(e CacheEntry) tg.InputPeerClass {
 	}
 }
 
-// idToPeer constructs an InputPeerClass from a numeric ID.
-//
-//   - positive ID        → InputPeerUser{UserID: id}
-//   - ID < -1000000000000 → InputPeerChannel{ChannelID: -id - 1000000000000}
-//   - other negative     → InputPeerChat{ChatID: -id}
+// resolveID tries the cache first (by raw ID), falling back to idToPeer.
+func (r *Resolver) resolveID(id int64) tg.InputPeerClass {
+	rawID := id
+	if id < -1000000000000 {
+		rawID = -id - 1000000000000
+	} else if id < 0 {
+		rawID = -id
+	}
+
+	if r.cache != nil {
+		key := fmt.Sprintf("id:%d", rawID)
+		entry, found, err := r.cache.Load(key)
+		if err == nil && found {
+			return entryToPeer(entry)
+		}
+	}
+	return idToPeer(id)
+}
+
+// idToPeer constructs an InputPeerClass from a numeric ID without cache.
 func idToPeer(id int64) tg.InputPeerClass {
 	switch {
 	case id > 0:
