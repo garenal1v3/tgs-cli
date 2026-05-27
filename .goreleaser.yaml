@@ -33,6 +33,7 @@ brews:
   - repository:
       owner: garenal1v3
       name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
     homepage: "https://github.com/garenal1v3/tgs-cli"
     description: "Fast CLI client for searching Telegram"
     license: "GPL-3.0"
