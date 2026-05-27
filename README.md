@@ -6,11 +6,11 @@
 
 🔍 Telegram search from your terminal
 
-[![Go](https://img.shields.io/github/go-mod/go-version/searchtgcli/tgs?style=flat-square)](https://go.dev/)
-[![License](https://img.shields.io/github/license/searchtgcli/tgs?style=flat-square)](LICENSE)
-[![CI](https://img.shields.io/github/actions/workflow/status/searchtgcli/tgs/ci.yaml?branch=main&style=flat-square&label=CI)](https://github.com/searchtgcli/tgs/actions)
-[![Release](https://img.shields.io/github/v/release/searchtgcli/tgs?style=flat-square)](https://github.com/searchtgcli/tgs/releases)
-[![Downloads](https://img.shields.io/github/downloads/searchtgcli/tgs/total?style=flat-square)](https://github.com/searchtgcli/tgs/releases)
+[![Go](https://img.shields.io/github/go-mod/go-version/garenal1v3/tgs-cli?style=flat-square)](https://go.dev/)
+[![License](https://img.shields.io/github/license/garenal1v3/tgs-cli?style=flat-square)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/garenal1v3/tgs-cli/ci.yaml?branch=main&style=flat-square&label=CI)](https://github.com/garenal1v3/tgs-cli/actions)
+[![Release](https://img.shields.io/github/v/release/garenal1v3/tgs-cli?style=flat-square)](https://github.com/garenal1v3/tgs-cli/releases)
+[![Downloads](https://img.shields.io/github/downloads/garenal1v3/tgs-cli/total?style=flat-square)](https://github.com/garenal1v3/tgs-cli/releases)
 
 ## Features
 
@@ -23,13 +23,7 @@
 
 ## Documentation
 
-📖 **[docs.searchtgcli.github.io/tgs](https://searchtgcli.github.io/tgs/)** (coming soon)
-
-## Contributors
-
-<a href="https://github.com/searchtgcli/tgs/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=searchtgcli/tgs" />
-</a>
+📖 **[garenal1v3.github.io/tgs-cli](https://garenal1v3.github.io/tgs-cli/)** (coming soon)
 
 ## License
 
