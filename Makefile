@@ -12,7 +12,7 @@ LDFLAGS  = -s -w \
 
 GOLANGCI_LINT_VERSION ?= v2.12.2
 
-.PHONY: build lint lint-docker fmt test install clean
+.PHONY: build lint lint-docker fmt test install clean docs
 
 build:
 	go build -ldflags '$(LDFLAGS)' -o tgs ./cmd/tgs/
@@ -31,6 +31,10 @@ test:
 
 install:
 	go install -ldflags '$(LDFLAGS)' ./cmd/tgs/
+
+docs:
+	@command -v hugo >/dev/null || { echo "hugo not found: brew install hugo"; exit 1; }
+	cd docs && npm install postcss postcss-cli autoprefixer 2>/dev/null; hugo server
 
 clean:
 	rm -f tgs
