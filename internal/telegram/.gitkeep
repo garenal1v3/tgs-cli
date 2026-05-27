@@ -1,0 +1,2 @@
+gotd/td client wrapper.
+Provides search, chat listing, and other Telegram API operations.

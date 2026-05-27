@@ -1,0 +1,2 @@
+Telegram authentication and session import from Desktop client.
+Will use gotd/td for MTProto auth flow.
