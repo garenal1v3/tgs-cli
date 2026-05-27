@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+IMAGE="tgs-ci:local"
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+info()  { echo -e "${YELLOW}▸ $1${NC}"; }
+ok()    { echo -e "${GREEN}✓ $1${NC}"; }
+fail()  { echo -e "${RED}✗ $1${NC}"; }
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+info "Building CI image…"
+if ! docker build -f Dockerfile.ci -t "$IMAGE" . -q > /dev/null 2>&1; then
+    docker build -f Dockerfile.ci -t "$IMAGE" .
+    fail "Docker build failed"
+    exit 1
+fi
+ok "CI image ready"
+
+ERRORS=0
+
+info "Running lint…"
+if docker run --rm "$IMAGE" golangci-lint run ./...; then
+    ok "Lint passed"
+else
+    fail "Lint failed"
+    ERRORS=$((ERRORS + 1))
+fi
+
+info "Running tests…"
+if docker run --rm "$IMAGE" make test; then
+    ok "Tests passed"
+else
+    fail "Tests failed"
+    ERRORS=$((ERRORS + 1))
+fi
+
+info "Building docs…"
+if docker run --rm "$IMAGE" sh -c "cd docs && hugo --minify"; then
+    ok "Docs build passed"
+else
+    fail "Docs build failed"
+    ERRORS=$((ERRORS + 1))
+fi
+
+echo ""
+if [ "$ERRORS" -gt 0 ]; then
+    fail "Pre-push checks failed ($ERRORS error(s)). Push aborted."
+    exit 1
+fi
+
+ok "All checks passed. Pushing…"

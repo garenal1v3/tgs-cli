@@ -21,8 +21,6 @@ builds:
       - -X github.com/searchtgcli/tgs/internal/cmd.Version={{.Version}}
       - -X github.com/searchtgcli/tgs/internal/cmd.Commit={{.ShortCommit}}
       - -X github.com/searchtgcli/tgs/internal/cmd.Date={{.Date}}
-      - -X github.com/searchtgcli/tgs/internal/telegram.defaultAPIID={{.Env.TGS_BUILD_API_ID}}
-      - -X github.com/searchtgcli/tgs/internal/telegram.defaultAPIHash={{.Env.TGS_BUILD_API_HASH}}
 
 archives:
   - format: tar.gz

@@ -10,7 +10,6 @@ import (
 	gosession "github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/auth/qrlogin"
-	"golang.org/x/term"
 )
 
 // Method represents an authentication method.
@@ -89,15 +88,4 @@ func prompt(label string) (string, error) {
 		return "", fmt.Errorf("no input")
 	}
 	return strings.TrimSpace(scanner.Text()), nil
-}
-
-// promptPassword writes label to stderr and reads a password without echo.
-func promptPassword(label string) (string, error) {
-	fmt.Fprint(os.Stderr, label)
-	pw, err := term.ReadPassword(int(os.Stdin.Fd()))
-	fmt.Fprintln(os.Stderr)
-	if err != nil {
-		return "", fmt.Errorf("read password: %w", err)
-	}
-	return string(pw), nil
 }

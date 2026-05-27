@@ -9,8 +9,8 @@ func TestAPICredentials_Defaults(t *testing.T) {
 	t.Setenv("TGS_API_HASH", "")
 
 	id, hash := apiCredentials()
-	if id != 0 {
-		t.Errorf("apiCredentials() id = %d, want 0", id)
+	if id != 2040 {
+		t.Errorf("apiCredentials() id = %d, want 2040", id)
 	}
 	if hash != defaultAPIHash {
 		t.Errorf("apiCredentials() hash = %q, want %q", hash, defaultAPIHash)
