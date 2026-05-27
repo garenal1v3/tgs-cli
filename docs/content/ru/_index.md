@@ -2,17 +2,20 @@
 title: tgs
 ---
 
-# tgs
+{{< blocks/cover title="tgs" image_anchor="top" height="med" >}}
+<p class="lead mt-5">Поиск по Telegram из терминала</p>
+<a class="btn btn-lg btn-primary me-3 mb-4" href="getting-started/">
+Начать
+</a>
+<a class="btn btn-lg btn-secondary me-3 mb-4" href="https://github.com/garenal1v3/tgs-cli">
+GitHub
+</a>
+{{< /blocks/cover >}}
 
-Быстрый CLI-клиент для поиска по Telegram через ваш аккаунт.
+{{% blocks/lead color="primary" %}}
+**Создан для AI-агентов.** JSON по умолчанию — инструмент для Claude Code, Codex и других.
 
-## Начало работы
+**Быстрый.** Единственное узкое место — сам Telegram API.
 
-Скоро — проект в ранней стадии разработки.
-
-## Почему tgs?
-
-- **Создан для агентов** — JSON по умолчанию, спроектирован как инструмент для AI-агентов
-- **Быстрый** — единственное узкое место — сам Telegram API
-- **Мульти-аккаунт** — переключение между профилями как в AWS CLI
-- **Кросс-платформенный** — один бинарник для Linux, macOS, Windows
+**Мульти-аккаунт.** Переключение между профилями как в AWS CLI.
+{{% /blocks/lead %}}

@@ -1,19 +1,27 @@
 baseURL: https://garenal1v3.github.io/tgs-cli/
 title: tgs
-languageCode: en-us
 
 defaultContentLanguage: en
+enableMissingTranslationPlaceholders: true
+enableGitInfo: true
 
 languages:
   en:
-    languageName: English
+    label: English
     weight: 1
+    contentDir: content/en
   ru:
-    languageName: Русский
+    label: Русский
     weight: 2
+    contentDir: content/ru
   zh:
-    languageName: 中文
+    label: 中文
     weight: 3
+    contentDir: content/zh
+
+taxonomies:
+  tag: tags
+  category: categories
 
 module:
   imports:
