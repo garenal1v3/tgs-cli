@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	defaultAPIID   = 0
+	defaultAPIID   = "0"
 	defaultAPIHash = ""
 )
 
@@ -37,17 +37,17 @@ type Client struct {
 
 // apiCredentials returns the API ID and hash, preferring env vars over defaults.
 func apiCredentials() (int, string) {
-	id := defaultAPIID
+	idStr := defaultAPIID
 	hash := defaultAPIHash
 
 	if envID := os.Getenv("TGS_API_ID"); envID != "" {
-		if parsed, err := strconv.Atoi(envID); err == nil {
-			id = parsed
-		}
+		idStr = envID
 	}
 	if envHash := os.Getenv("TGS_API_HASH"); envHash != "" {
 		hash = envHash
 	}
+
+	id, _ := strconv.Atoi(idStr)
 	return id, hash
 }
 
