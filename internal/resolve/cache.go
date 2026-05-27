@@ -14,7 +14,7 @@ var bucketPeers = []byte("peers")
 
 // CacheEntry represents a resolved peer stored in the cache.
 type CacheEntry struct {
-	PeerType   string `json:"peer_type"`   // "user", "channel", "chat"
+	PeerType   string `json:"peer_type"` // "user", "channel", "chat"
 	ID         int64  `json:"id"`
 	AccessHash int64  `json:"access_hash"`
 	ResolvedAt int64  `json:"resolved_at"` // unix timestamp

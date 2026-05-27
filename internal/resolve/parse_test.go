@@ -6,8 +6,8 @@ import (
 
 func TestParseInput_Username(t *testing.T) {
 	tests := []struct {
-		input    string
-		wantVal  string
+		input   string
+		wantVal string
 	}{
 		{"@durov", "durov"},
 		{"durov", "durov"},

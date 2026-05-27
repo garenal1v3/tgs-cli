@@ -13,7 +13,7 @@ func TestPeerCache_StoreAndLoad(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPeerCache: %v", err)
 	}
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 
 	want := CacheEntry{
 		PeerType:   "channel",
@@ -54,7 +54,7 @@ func TestPeerCache_LoadMissing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPeerCache: %v", err)
 	}
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 
 	_, found, err := cache.Load("@nonexistent")
 	if err != nil {
@@ -72,7 +72,7 @@ func TestPeerCache_TTLExpired(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPeerCache: %v", err)
 	}
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 
 	// Set TTL to 1 second.
 	cache.TTL = 1 * time.Second

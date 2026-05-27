@@ -21,17 +21,17 @@ import (
 
 func newMessagesCmd() *cobra.Command {
 	var (
-		flagChat     []string
-		flagFrom     string
-		flagFilter   string
-		flagAfter    string
-		flagBefore   string
-		flagTopic    int
-		flagLimit    int
-		flagCursor   string
-		flagMaxWait  int
-		flagNoCache  bool
-		flagProfile  string
+		flagChat    []string
+		flagFrom    string
+		flagFilter  string
+		flagAfter   string
+		flagBefore  string
+		flagTopic   int
+		flagLimit   int
+		flagCursor  string
+		flagMaxWait int
+		flagNoCache bool
+		flagProfile string
 	)
 
 	cmd := &cobra.Command{
