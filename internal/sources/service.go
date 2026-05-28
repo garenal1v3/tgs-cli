@@ -13,6 +13,7 @@ import (
 	"github.com/searchtgcli/tgs/internal/retry"
 )
 
+
 // Service exposes high-level operations over Telegram source data.
 type Service struct {
 	api      API
@@ -51,6 +52,7 @@ func (s *Service) List(ctx context.Context, req ListRequest) (*ListResult, error
 
 	var all []sourceWithPeer
 	var totalAcc int
+	var totalSeen int // unfiltered count actually returned across pages
 	var nextCursor *Cursor
 	for {
 		page, next, total, err := s.fetchDialogs(ctx, cur, pageSize, req.Archived, s.selfID)
@@ -60,6 +62,7 @@ func (s *Service) List(ctx context.Context, req ListRequest) (*ListResult, error
 		if total > totalAcc {
 			totalAcc = total
 		}
+		totalSeen += len(page)
 		// Filter each page before accumulating so the limit check counts only
 		// matching items (fixes: --type bot --limit 2 returning empty results).
 		page = filterByType(page, req.Types)
@@ -72,6 +75,12 @@ func (s *Service) List(ctx context.Context, req ListRequest) (*ListResult, error
 			nextCursor = next
 			break
 		}
+	}
+	// Telegram's reported Count is sometimes smaller than the slice it
+	// actually returns (stale dialog-count cache). Make sure total never
+	// under-reports what we returned.
+	if totalSeen > totalAcc {
+		totalAcc = totalSeen
 	}
 	if req.Limit > 0 && len(all) > req.Limit {
 		all = all[:req.Limit]
@@ -131,10 +140,10 @@ func (s *Service) Inspect(ctx context.Context, req InspectRequest) (*Source, err
 }
 
 // resolveForInspect resolves ref to an InputPeer, an initial Source seed (with
-// type/title/etc), and a *bool indicating subscription state. Returns
-// subscribed=nil for users/bots (subscription concept doesn't apply) and for
-// channels resolved from cache or by numeric ID (Left flag unknown — falls
-// back to error-code detection in inspectKnownWithSubscription).
+// type/title/etc), and a *bool indicating subscription state. The seed Source
+// is populated from the resolver snapshot (live API response or cached) so
+// that title/username/access/verified are present even when fetchFull is
+// skipped (unsubscribed, private, or network failure).
 func (s *Service) resolveForInspect(ctx context.Context, ref string) (tg.InputPeerClass, *bool, Source, error) {
 	// Self alias.
 	if ref == "@me" || ref == "-" {
@@ -152,19 +161,90 @@ func (s *Service) resolveForInspect(ctx context.Context, ref string) (tg.InputPe
 		return nil, nil, Source{}, err
 	}
 
-	// Build a seed Source from peer type. Concrete fields are filled by fetchFull.
-	var src Source
-	switch p := peer.(type) {
-	case *tg.InputPeerChannel:
-		src = Source{ID: botAPIChannelID(p.ChannelID), Type: "channel"}
-	case *tg.InputPeerChat:
-		src = Source{ID: -p.ChatID, Type: "group"}
-	case *tg.InputPeerUser:
-		src = Source{ID: p.UserID, Type: "user"}
-	default:
+	src := buildInspectSeed(peer, meta.Snapshot)
+	if src.ID == 0 {
 		return nil, nil, Source{}, fmt.Errorf("unsupported peer type: %T", peer)
 	}
-	return peer, meta.Subscribed, src, nil
+	src = markSelf(src, s.selfID)
+	subscribed := meta.Subscribed
+	if src.Saved && subscribed == nil {
+		yes := true
+		subscribed = &yes
+	}
+	return peer, subscribed, src, nil
+}
+
+// markSelf flags a Source as Saved Messages when its ID matches the
+// authenticated user's selfID — so `tgs sources inspect +<own-phone>` is
+// consistent with `inspect @me` / `inspect -`.
+func markSelf(src Source, selfID int64) Source {
+	if selfID == 0 || src.ID != selfID {
+		return src
+	}
+	src.Saved = true
+	if src.Title == "" {
+		src.Title = "Saved Messages"
+	}
+	return src
+}
+
+// buildInspectSeed constructs the initial Source for an inspect call. When a
+// snapshot is available (live resolve or cache hit with snapshot fields), it
+// copies title/username/access/members/flags into the seed so that those
+// fields are present in the response even when fetchFull is unavailable.
+//
+// With a nil snapshot — e.g. ID-based resolves with cache miss — only the
+// peer type and ID are populated; fetchFull (when subscribed) will fill in
+// the rest.
+func buildInspectSeed(peer tg.InputPeerClass, snap *resolve.PeerSnapshot) Source {
+	switch p := peer.(type) {
+	case *tg.InputPeerChannel:
+		src := Source{ID: botAPIChannelID(p.ChannelID), Type: "channel"}
+		if snap != nil {
+			if snap.Broadcast {
+				src.Type = "channel"
+			} else if snap.Title != "" || snap.Username != "" || snap.HasTopics || snap.Gigagroup || snap.MembersCount > 0 {
+				// Snapshot present but Broadcast=false → supergroup.
+				src.Type = "supergroup"
+			}
+			src.Title = snap.Title
+			src.Username = snap.Username
+			src.Access = snap.Access
+			src.MembersCount = snap.MembersCount
+			src.Verified = snap.Verified
+			src.Scam = snap.Scam
+			src.Fake = snap.Fake
+			src.Restricted = snap.Restricted
+			src.HasTopics = snap.HasTopics
+			src.Gigagroup = snap.Gigagroup
+		}
+		return src
+	case *tg.InputPeerChat:
+		src := Source{ID: -p.ChatID, Type: "group"}
+		if snap != nil {
+			src.Title = snap.Title
+			src.MembersCount = snap.MembersCount
+		}
+		return src
+	case *tg.InputPeerUser:
+		src := Source{ID: p.UserID, Type: "user"}
+		if snap != nil {
+			if snap.IsBot {
+				src.Type = "bot"
+			}
+			src.FirstName = snap.FirstName
+			src.LastName = snap.LastName
+			src.Username = snap.Username
+			src.Phone = snap.Phone
+			src.Verified = snap.Verified
+			src.Scam = snap.Scam
+			src.Fake = snap.Fake
+			src.Restricted = snap.Restricted
+			src.Deleted = snap.Deleted
+		}
+		return src
+	}
+	return Source{}
 }
 
 // inspectKnown is the entry point used by tests that supply a known peer.
@@ -175,31 +255,35 @@ func (s *Service) inspectKnown(ctx context.Context, src Source, peer tg.InputPee
 }
 
 // inspectKnownWithSubscription completes a Source by pulling full info and
-// (optionally) stats. If subscribed is *false, stats are skipped and set to nil.
+// (optionally) stats.
 //
-// subscribed may be nil ("unknown") — in that case we still try fetchFull and
-// only conclude "not subscribed" if the API returns an access-denied error.
+//   - subscribed == *true  → fetchFull + fetchStats
+//   - subscribed == *false → fetchFull (still works for public channels),
+//     stats skipped (would just yield zeros without membership)
+//   - subscribed == nil    → fetchFull; on CHANNEL_PRIVATE-class errors infer
+//     subscribed=*false and stop, otherwise proceed with stats.
 func (s *Service) inspectKnownWithSubscription(ctx context.Context, src Source, peer tg.InputPeerClass, noStats bool, subscribed *bool) (*Source, error) {
 	src.Subscribed = subscribed
 
-	// Skip the network call entirely if we already know we're not subscribed.
-	if subscribed != nil && !*subscribed {
-		return &src, nil
-	}
-
-	payload, err := s.fetchFull(ctx, src, peer)
-	if err == nil {
+	payload, fullErr := s.fetchFull(ctx, src, peer)
+	if fullErr == nil {
 		applyPayload(&src, payload)
 	} else {
-		code := telegramErrorCode(err)
+		code := telegramErrorCode(fullErr)
 		src.StatsError = code
-		// Fallback for subscribed==nil paths (cache hit, numeric ID): if
-		// full-info fetch fails with a "no access" code, conclude not subscribed.
-		if code == "CHANNEL_PRIVATE" || code == "USER_PRIVACY_RESTRICTED" || code == "CHANNEL_INVALID" {
+		// CHANNEL_PRIVATE / no-access errors are a signal: when subscription
+		// state was unknown, infer *false and stop.
+		if subscribed == nil && (code == "CHANNEL_PRIVATE" || code == "USER_PRIVACY_RESTRICTED" || code == "CHANNEL_INVALID") {
 			no := false
 			src.Subscribed = &no
 			return &src, nil
 		}
+	}
+
+	// Known-unsubscribed: don't attempt stats — without membership they'd be
+	// either rejected or return zeros.
+	if subscribed != nil && !*subscribed {
+		return &src, nil
 	}
 
 	if noStats {
@@ -215,9 +299,8 @@ func (s *Service) inspectKnownWithSubscription(ctx context.Context, src Source, 
 		return &src, nil
 	}
 	src.Stats = stats
-	// Stats succeeded: clear any earlier fetchFull error (e.g. InputPeerSelf
-	// type-assertion failure that is now fixed, or transient errors) since the
-	// peer is clearly accessible and we have valid data.
+	// Stats succeeded: clear any earlier fetchFull error since the peer is
+	// clearly accessible and we have valid data.
 	src.StatsError = ""
 	return &src, nil
 }

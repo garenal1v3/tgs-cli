@@ -3,6 +3,7 @@ package sources
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/gotd/td/tg"
 
@@ -51,6 +52,18 @@ func (s *Service) fetchFull(ctx context.Context, src Source, peer tg.InputPeerCl
 				p.InviteLink = ex.Link
 			}
 		}
+		// Creation date lives on the matching tg.Channel inside Chats, not
+		// on ChannelFull itself.
+		for _, c := range res.Chats {
+			ch, ok := c.(*tg.Channel)
+			if !ok || ch.ID != full.ID {
+				continue
+			}
+			if ch.Date != 0 {
+				p.CreationDate = time.Unix(int64(ch.Date), 0).UTC().Format(time.RFC3339)
+			}
+			break
+		}
 		return p, nil
 
 	case "group":
@@ -74,6 +87,16 @@ func (s *Service) fetchFull(ctx context.Context, src Source, peer tg.InputPeerCl
 			if ex, ok := inv.(*tg.ChatInviteExported); ok {
 				p.InviteLink = ex.Link
 			}
+		}
+		for _, c := range res.Chats {
+			ch, ok := c.(*tg.Chat)
+			if !ok || ch.ID != full.ID {
+				continue
+			}
+			if ch.Date != 0 {
+				p.CreationDate = time.Unix(int64(ch.Date), 0).UTC().Format(time.RFC3339)
+			}
+			break
 		}
 		return p, nil
 

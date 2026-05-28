@@ -42,6 +42,54 @@ func TestFetchFull_Channel(t *testing.T) {
 	}
 }
 
+func TestFetchFull_Channel_FillsCreationDate(t *testing.T) {
+	// Channel created at 2015-08-26 10:00:00 UTC.
+	const createdAt = 1440583200
+	api := &mockAPI{
+		getFullChannel: func(_ context.Context, _ tg.InputChannelClass) (*tg.MessagesChatFull, error) {
+			full := &tg.ChannelFull{ID: 111, About: "x", ParticipantsCount: 1}
+			// channels.getFullChannel returns the parent Chats slice with the
+			// concrete tg.Channel (carrying the creation Date).
+			ch := &tg.Channel{ID: 111, Title: "T", Broadcast: true, Date: createdAt}
+			return &tg.MessagesChatFull{
+				FullChat: full,
+				Chats:    []tg.ChatClass{ch},
+			}, nil
+		},
+	}
+	s := &Service{api: api}
+	got, err := s.fetchFull(context.Background(), Source{ID: -1000000000111, Type: "channel"}, &tg.InputPeerChannel{ChannelID: 111, AccessHash: 1})
+	if err != nil {
+		t.Fatalf("fetchFull: %v", err)
+	}
+	if got.CreationDate != "2015-08-26T10:00:00Z" {
+		t.Errorf("CreationDate = %q, want 2015-08-26T10:00:00Z", got.CreationDate)
+	}
+}
+
+func TestFetchFull_LegacyGroup_FillsCreationDate(t *testing.T) {
+	const createdAt = 1440583200
+	api := &mockAPI{
+		getFullChat: func(_ context.Context, _ int64) (*tg.MessagesChatFull, error) {
+			full := &tg.ChatFull{ID: 5, About: "old"}
+			return &tg.MessagesChatFull{
+				FullChat: full,
+				Chats: []tg.ChatClass{
+					&tg.Chat{ID: 5, Title: "OldGrp", Date: createdAt},
+				},
+			}, nil
+		},
+	}
+	s := &Service{api: api}
+	got, err := s.fetchFull(context.Background(), Source{ID: -5, Type: "group"}, &tg.InputPeerChat{ChatID: 5})
+	if err != nil {
+		t.Fatalf("fetchFull: %v", err)
+	}
+	if got.CreationDate != "2015-08-26T10:00:00Z" {
+		t.Errorf("CreationDate = %q", got.CreationDate)
+	}
+}
+
 func TestFetchFull_LegacyGroup(t *testing.T) {
 	api := &mockAPI{
 		getFullChat: func(_ context.Context, _ int64) (*tg.MessagesChatFull, error) {

@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/gotd/td/tg"
+
+	"github.com/searchtgcli/tgs/internal/resolve"
 )
 
 func TestService_List_BasicFiltering(t *testing.T) {
@@ -181,30 +183,78 @@ func TestService_Inspect_Subscribed(t *testing.T) {
 	}
 }
 
-func TestService_Inspect_NotSubscribedSkipsAllCalls(t *testing.T) {
-	called := false
+// TestService_Inspect_NotSubscribed_FetchesFullSkipsStats verifies that
+// inspect of an unsubscribed public channel still pulls description / members
+// via channels.getFullChannel (which works without membership for public
+// channels), but skips messages.search / messages.getHistory (which require
+// membership and would just produce empty stats).
+func TestService_Inspect_NotSubscribed_FetchesFullSkipsStats(t *testing.T) {
+	statsCalled := false
 	api := &mockAPI{
 		getFullChannel: func(_ context.Context, _ tg.InputChannelClass) (*tg.MessagesChatFull, error) {
-			called = true
-			return nil, errors.New("should not be called")
+			full := &tg.ChannelFull{ID: 1, About: "official", ParticipantsCount: 9999}
+			return &tg.MessagesChatFull{FullChat: full}, nil
+		},
+		search: func(_ context.Context, _ *tg.MessagesSearchRequest) (tg.MessagesMessagesClass, error) {
+			statsCalled = true
+			return &tg.MessagesMessagesSlice{}, nil
+		},
+		getHistory: func(_ context.Context, _ *tg.MessagesGetHistoryRequest) (tg.MessagesMessagesClass, error) {
+			statsCalled = true
+			return &tg.MessagesMessagesSlice{}, nil
 		},
 	}
 	s := New(api, nil, nil, nil, 0)
 	notSubscribed := false
 	src, err := s.inspectKnownWithSubscription(context.Background(), Source{
-		ID: -1000000000001, Type: "channel",
+		ID: -1000000000001, Type: "channel", Title: "Pre-set",
 	}, &tg.InputPeerChannel{ChannelID: 1, AccessHash: 1}, false, &notSubscribed)
 	if err != nil {
 		t.Fatalf("inspect: %v", err)
 	}
-	if called {
-		t.Error("fetchFull should be skipped when subscribed is *false")
+	if statsCalled {
+		t.Error("messages.search / getHistory should be skipped when subscribed=*false")
 	}
 	if src.Subscribed == nil || *src.Subscribed != false {
 		t.Errorf("Subscribed = %+v, want *false", src.Subscribed)
 	}
 	if src.Stats != nil {
 		t.Errorf("Stats should be nil, got %+v", src.Stats)
+	}
+	if src.Description != "official" || src.MembersCount != 9999 {
+		t.Errorf("expected fetchFull-supplied description/members, got %+v", src)
+	}
+}
+
+// TestService_Inspect_NotSubscribed_PrivateGracefulOnFetchFullFail verifies
+// that when fetchFull fails for an unsubscribed channel (e.g. CHANNEL_PRIVATE
+// for a private channel), the seed Source is returned intact, Subscribed
+// stays *false, and a StatsError code is recorded — but Stats remain nil.
+func TestService_Inspect_NotSubscribed_PrivateGracefulOnFetchFullFail(t *testing.T) {
+	api := &mockAPI{
+		getFullChannel: func(_ context.Context, _ tg.InputChannelClass) (*tg.MessagesChatFull, error) {
+			return nil, errors.New("rpc error code 400: CHANNEL_PRIVATE (caused by ...)")
+		},
+	}
+	s := New(api, nil, nil, nil, 0)
+	no := false
+	src, err := s.inspectKnownWithSubscription(context.Background(), Source{
+		ID: -1000000000001, Type: "channel", Title: "Seed Title",
+	}, &tg.InputPeerChannel{ChannelID: 1, AccessHash: 1}, false, &no)
+	if err != nil {
+		t.Fatalf("inspect: %v", err)
+	}
+	if src.Title != "Seed Title" {
+		t.Errorf("Seed title lost: %q", src.Title)
+	}
+	if src.Subscribed == nil || *src.Subscribed != false {
+		t.Errorf("Subscribed = %+v, want *false", src.Subscribed)
+	}
+	if src.StatsError != "CHANNEL_PRIVATE" {
+		t.Errorf("StatsError = %q, want CHANNEL_PRIVATE", src.StatsError)
+	}
+	if src.Stats != nil {
+		t.Error("Stats should be nil for unsubscribed channel")
 	}
 }
 
@@ -345,6 +395,163 @@ func TestService_Inspect_SelfPeerNoStatsError(t *testing.T) {
 	}
 	if !src.Saved {
 		t.Error("Saved should be true")
+	}
+}
+
+// TestService_List_TotalAtLeastReturnedCount verifies that when Telegram's
+// reported MessagesDialogsSlice.Count is smaller than the number of dialogs
+// we actually accumulated, the response uses the larger value — so
+// `total >= len(sources)` always holds before filtering. Fixes P0-8.
+//
+// Telegram occasionally returns a Count smaller than the dialogs it actually
+// shipped in the same page (race between the count cache and the slice
+// pagination). We model that exact inconsistency here.
+func TestService_List_TotalAtLeastReturnedCount(t *testing.T) {
+	api := &mockAPI{
+		getDialogs: func(_ context.Context, _ *tg.MessagesGetDialogsRequest) (tg.MessagesDialogsClass, error) {
+			ch1 := &tg.Channel{ID: 1, Title: "C1", Broadcast: true}
+			ch1.SetAccessHash(1)
+			ch2 := &tg.Channel{ID: 2, Title: "C2", Broadcast: true}
+			ch2.SetAccessHash(2)
+			ch3 := &tg.Channel{ID: 3, Title: "C3", Broadcast: true}
+			ch3.SetAccessHash(3)
+			ch4 := &tg.Channel{ID: 4, Title: "C4", Broadcast: true}
+			ch4.SetAccessHash(4)
+			// Stale server count: claims 2 but ships 4. hasMore must stay
+			// false (len(dialogs)=4 < pageSize=100) so we don't request a
+			// next page.
+			return &tg.MessagesDialogsSlice{
+				Count: 2,
+				Dialogs: []tg.DialogClass{
+					&tg.Dialog{Peer: &tg.PeerChannel{ChannelID: 1}, TopMessage: 10},
+					&tg.Dialog{Peer: &tg.PeerChannel{ChannelID: 2}, TopMessage: 9},
+					&tg.Dialog{Peer: &tg.PeerChannel{ChannelID: 3}, TopMessage: 8},
+					&tg.Dialog{Peer: &tg.PeerChannel{ChannelID: 4}, TopMessage: 7},
+				},
+				Messages: []tg.MessageClass{
+					&tg.Message{ID: 10, Date: 1700000010},
+					&tg.Message{ID: 9, Date: 1700000009},
+					&tg.Message{ID: 8, Date: 1700000008},
+					&tg.Message{ID: 7, Date: 1700000007},
+				},
+				Chats: []tg.ChatClass{ch1, ch2, ch3, ch4},
+			}, nil
+		},
+	}
+	s := New(api, nil, nil, nil, 0)
+	got, err := s.List(context.Background(), ListRequest{})
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if len(got.Sources) != 4 {
+		t.Fatalf("sources = %d, want 4", len(got.Sources))
+	}
+	if got.Total < len(got.Sources) {
+		t.Errorf("Total = %d, want >= %d (len sources)", got.Total, len(got.Sources))
+	}
+	if got.Total != 4 {
+		t.Errorf("Total = %d, want 4 (max of server count and totalSeen)", got.Total)
+	}
+}
+
+func TestBuildInspectSeed_ChannelSnapshot(t *testing.T) {
+	snap := &resolve.PeerSnapshot{
+		Title: "Pub", Username: "pubch", Access: "public",
+		MembersCount: 5000, Verified: true, Broadcast: true,
+	}
+	got := buildInspectSeed(&tg.InputPeerChannel{ChannelID: 1234, AccessHash: 99}, snap)
+	if got.Type != "channel" {
+		t.Errorf("Type = %q, want channel", got.Type)
+	}
+	if got.Title != "Pub" {
+		t.Errorf("Title = %q, want Pub", got.Title)
+	}
+	if got.Username != "pubch" {
+		t.Errorf("Username = %q, want pubch", got.Username)
+	}
+	if got.Access != "public" {
+		t.Errorf("Access = %q, want public", got.Access)
+	}
+	if got.MembersCount != 5000 {
+		t.Errorf("MembersCount = %d, want 5000", got.MembersCount)
+	}
+	if !got.Verified {
+		t.Error("Verified should be true")
+	}
+}
+
+func TestBuildInspectSeed_SupergroupSnapshot(t *testing.T) {
+	snap := &resolve.PeerSnapshot{
+		Title: "Group", Username: "grp", Access: "public",
+		Broadcast: false, HasTopics: true,
+	}
+	got := buildInspectSeed(&tg.InputPeerChannel{ChannelID: 200}, snap)
+	if got.Type != "supergroup" {
+		t.Errorf("Type = %q, want supergroup", got.Type)
+	}
+	if !got.HasTopics {
+		t.Error("HasTopics should be true")
+	}
+}
+
+func TestBuildInspectSeed_UserSnapshot(t *testing.T) {
+	snap := &resolve.PeerSnapshot{FirstName: "Alice", Username: "alice", IsBot: false, Verified: true}
+	got := buildInspectSeed(&tg.InputPeerUser{UserID: 42, AccessHash: 1}, snap)
+	if got.Type != "user" {
+		t.Errorf("Type = %q, want user", got.Type)
+	}
+	if got.FirstName != "Alice" {
+		t.Errorf("FirstName = %q", got.FirstName)
+	}
+	if got.Username != "alice" {
+		t.Errorf("Username = %q", got.Username)
+	}
+}
+
+func TestBuildInspectSeed_BotSnapshot(t *testing.T) {
+	snap := &resolve.PeerSnapshot{FirstName: "MyBot", Username: "mybot", IsBot: true}
+	got := buildInspectSeed(&tg.InputPeerUser{UserID: 10}, snap)
+	if got.Type != "bot" {
+		t.Errorf("Type = %q, want bot (IsBot=true)", got.Type)
+	}
+}
+
+// TestBuildInspectSeed_SelfByPhone marks the seed as Saved Messages when
+// the resolved peer is the authenticated user themselves (covers P2-17:
+// inspect +<own-phone> should behave like inspect @me).
+func TestBuildInspectSeed_SelfByPhone(t *testing.T) {
+	const selfID int64 = 42
+	snap := &resolve.PeerSnapshot{FirstName: "Me", Phone: "79001234567"}
+	got := buildInspectSeed(&tg.InputPeerUser{UserID: selfID, AccessHash: 1}, snap)
+	got = markSelf(got, selfID)
+	if !got.Saved {
+		t.Error("expected Saved=true when seed ID matches selfID")
+	}
+	if got.Title != "Saved Messages" {
+		t.Errorf("Title = %q, want Saved Messages", got.Title)
+	}
+}
+
+// TestBuildInspectSeed_OtherUserNotSaved verifies markSelf is a no-op for
+// peers that aren't the authenticated user.
+func TestBuildInspectSeed_OtherUserNotSaved(t *testing.T) {
+	const selfID int64 = 42
+	got := buildInspectSeed(&tg.InputPeerUser{UserID: 99}, &resolve.PeerSnapshot{FirstName: "Other"})
+	got = markSelf(got, selfID)
+	if got.Saved {
+		t.Error("Saved should remain false for non-self user")
+	}
+}
+
+func TestBuildInspectSeed_NilSnapshot_ChannelStillTyped(t *testing.T) {
+	got := buildInspectSeed(&tg.InputPeerChannel{ChannelID: 1}, nil)
+	if got.Type != "channel" {
+		t.Errorf("Type = %q, want channel even without snapshot (default broadcast=false=supergroup unless snapshot says otherwise — but with nil we default to channel)", got.Type)
+	}
+	// We can't determine channel vs supergroup without a snapshot — default
+	// to "channel" since it's the more common subscribe target.
+	if got.Title != "" || got.Username != "" {
+		t.Errorf("expected empty Title/Username with nil snapshot, got %+v", got)
 	}
 }
 
