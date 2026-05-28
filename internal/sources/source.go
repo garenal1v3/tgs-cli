@@ -70,6 +70,7 @@ type ListRequest struct {
 	Limit     int    // 0 = no cap (fetch all)
 	Cursor    string // empty = start
 	Archived  bool
+	Folder    string // dialog filter id or name (empty = whole account)
 }
 
 // ListResult is the output of Service.List.

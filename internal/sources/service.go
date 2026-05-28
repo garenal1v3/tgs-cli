@@ -45,6 +45,9 @@ func New(api API, resolver *resolve.Resolver, retryPolicy *retry.Policy, cache *
 // 1. The cursor carries the current folder so paginated calls resume in the
 // right place.
 func (s *Service) List(ctx context.Context, req ListRequest) (*ListResult, error) {
+	if req.Folder != "" {
+		return s.listByFolder(ctx, req)
+	}
 	cur, err := DecodeCursor(req.Cursor)
 	if err != nil {
 		return nil, err
@@ -469,6 +472,62 @@ func applyPayload(src *Source, p *CachedPayload) {
 	}
 	if p.Stats != nil {
 		src.Stats = p.Stats
+	}
+}
+
+// listByFolder is the --folder branch of List. It resolves the folder, then
+// applies --type and --limit locally to the folder's contents. --cursor is
+// not supported here (validated at the CLI layer; defensive guard returns an
+// error if it slips through).
+func (s *Service) listByFolder(ctx context.Context, req ListRequest) (*ListResult, error) {
+	if req.Cursor != "" {
+		return nil, errors.New("--cursor cannot be combined with --folder")
+	}
+	resolved, err := s.ResolveFolder(ctx, req.Folder, req.Archived)
+	if err != nil {
+		return nil, err
+	}
+	chats := resolved.Folder.Chats
+	if len(req.Types) > 0 {
+		set := make(map[string]bool, len(req.Types))
+		for _, k := range req.Types {
+			set[k] = true
+		}
+		filtered := chats[:0:0]
+		for _, c := range chats {
+			if set[c.Type] {
+				filtered = append(filtered, c)
+			}
+		}
+		chats = filtered
+	}
+	total := len(chats)
+	if req.Limit > 0 && len(chats) > req.Limit {
+		chats = chats[:req.Limit]
+	}
+	if req.WithStats {
+		s.enrichSourcesWithStats(ctx, chats, resolved.Peers)
+	}
+	return &ListResult{
+		Sources:  chats,
+		Total:    total,
+		Returned: len(chats),
+	}, nil
+}
+
+// enrichSourcesWithStats adapts the folder-branch chats (parallel arrays of
+// Source and InputPeer) to the existing enrichWithStats helper.
+func (s *Service) enrichSourcesWithStats(ctx context.Context, chats []Source, peers []tg.InputPeerClass) {
+	items := make([]sourceWithPeer, 0, len(chats))
+	for i := range chats {
+		if i >= len(peers) {
+			break
+		}
+		items = append(items, sourceWithPeer{Source: chats[i], Peer: peers[i]})
+	}
+	s.enrichWithStats(ctx, items)
+	for i := range items {
+		chats[i] = items[i].Source
 	}
 }
 
