@@ -3,6 +3,7 @@ package sources
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/gotd/td/tg"
 )
@@ -121,5 +122,39 @@ func TestFetchDialogs_SliceWithCursor(t *testing.T) {
 	}
 	if nextCursor.OffsetID != 42 || nextCursor.OffsetPeerType != "channel" || nextCursor.OffsetPeerID != 222 {
 		t.Errorf("cursor = %+v", nextCursor)
+	}
+}
+
+func TestFetchDialogs_PopulatesContactAndMuted(t *testing.T) {
+	api := &mockAPI{
+		getDialogs: func(_ context.Context, _ *tg.MessagesGetDialogsRequest) (tg.MessagesDialogsClass, error) {
+			user := &tg.User{ID: 42, Contact: true}
+			user.SetFirstName("Carol")
+			user.SetAccessHash(99)
+			d := &tg.Dialog{
+				Peer:       &tg.PeerUser{UserID: 42},
+				TopMessage: 1,
+			}
+			d.NotifySettings.SetMuteUntil(int(time.Now().Add(24 * time.Hour).Unix()))
+			return &tg.MessagesDialogs{
+				Dialogs:  []tg.DialogClass{d},
+				Messages: []tg.MessageClass{&tg.Message{ID: 1, Date: 1700000000}},
+				Users:    []tg.UserClass{user},
+			}, nil
+		},
+	}
+	s := &Service{api: api}
+	items, _, _, err := s.fetchDialogs(context.Background(), nil, 100, 0, 0)
+	if err != nil {
+		t.Fatalf("fetchDialogs: %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("got %d items, want 1", len(items))
+	}
+	if !items[0].IsContact {
+		t.Errorf("IsContact = false, want true")
+	}
+	if !items[0].IsMuted {
+		t.Errorf("IsMuted = false, want true")
 	}
 }
