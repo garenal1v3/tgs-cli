@@ -1,0 +1,160 @@
+---
+title: Источники
+weight: 40
+---
+
+> **Примечание:** Эта документация может отставать от [английской версии](/en/guide/sources/).
+
+# Источники
+
+`tgs sources` позволяет перечислить и изучить диалоги Telegram в вашем аккаунте — каналы, супергруппы, группы, пользователей и ботов. Весь вывод в формате JSON, удобном для обработки через `jq` или AI-агентов.
+
+## Список всех источников
+
+Самый простой вызов возвращает все диалоги в вашем аккаунте:
+
+```bash
+tgs sources list
+```
+
+Ответ — JSON-объект с массивом `sources` и полем `total`:
+
+```json
+{
+  "sources": [
+    {
+      "id": -1001234567890,
+      "type": "channel",
+      "title": "Durov's Channel",
+      "username": "durov",
+      "access": "public",
+      "members_count": 1234567,
+      "verified": true,
+      "unread_count": 0,
+      "last_message": {"id": 4321, "date": "2026-05-28T08:15:00Z"}
+    }
+  ],
+  "total": 287,
+  "cursor": ""
+}
+```
+
+## Фильтр по типу
+
+Используйте `--type` для ограничения результатов по типу диалога. Можно передать один тип или несколько через запятую:
+
+```bash
+# Только каналы
+tgs sources list --type channel
+
+# Каналы и супергруппы
+tgs sources list --type channel,supergroup
+
+# Только боты
+tgs sources list --type bot
+```
+
+Поддерживаемые типы: `channel`, `supergroup`, `group`, `user`, `bot`.
+
+## Получение полных метрик
+
+По умолчанию `tgs sources list` работает быстро и не делает лишних API-запросов. Добавьте `--with-stats`, чтобы получить статистику сообщений по каждому источнику:
+
+```bash
+tgs sources list --with-stats
+```
+
+Каждый источник в ответе будет содержать объект `stats`:
+
+```json
+{
+  "stats": {
+    "total_messages": 12345,
+    "messages_24h": 3,
+    "first_message": {"id": 1, "date": "2015-08-26T10:00:00Z"}
+  }
+}
+```
+
+**Заметка о производительности:** `--with-stats` инициирует примерно 4 API-запроса на каждый источник. Для больших аккаунтов это может занять несколько минут. Статистика неактивных источников (последнее сообщение старше 7 дней) кешируется на диске и используется повторно до тех пор, пока источник не получит новое сообщение.
+
+## Изучение одного источника
+
+`tgs sources inspect` даёт полную картину по одному источнику. Работает как для подписанных каналов, так и для публичных, на которые вы не подписаны:
+
+```bash
+# По username
+tgs sources inspect @durov
+
+# По числовому Telegram ID
+tgs sources inspect -1001234567890
+
+# Ваше «Избранное» (Saved Messages)
+tgs sources inspect -
+```
+
+В ответе появляются дополнительные поля, недоступные в `list`: `subscribed`, `description`, `creation_date`, `invite_link`.
+
+### Изучение канала без подписки
+
+Зная `@username`, вы можете изучить любой публичный канал, не вступая в него:
+
+```bash
+tgs sources inspect @somebigtechchannel
+```
+
+В ответе `subscribed` будет `false`, а `stats` — `null`.
+
+Чтобы пропустить получение статистики (быстрее):
+
+```bash
+tgs sources inspect @durov --no-stats
+```
+
+## Пагинация для больших аккаунтов
+
+Если у вас сотни диалогов, используйте `--limit` и `--cursor` для постраничного обхода:
+
+```bash
+# Первая страница
+tgs sources list --limit 50
+```
+
+В ответе будет строка `cursor`. Передайте её для получения следующей страницы:
+
+```bash
+tgs sources list --limit 50 --cursor "eyJvIjo1MCwiZCI6MH0"
+```
+
+Когда поле `cursor` в ответе пустое — вы дошли до последней страницы.
+
+Типичный цикл пагинации в shell-скрипте:
+
+```bash
+cursor=""
+while true; do
+  if [ -z "$cursor" ]; then
+    result=$(tgs sources list --limit 50)
+  else
+    result=$(tgs sources list --limit 50 --cursor "$cursor")
+  fi
+
+  echo "$result" | jq '.sources[]'
+
+  cursor=$(echo "$result" | jq -r '.cursor? // empty')
+  [ -z "$cursor" ] && break
+done
+```
+
+## Архивированные диалоги
+
+Архивированные диалоги по умолчанию скрыты из списка. Передайте `--archived`, чтобы включить их:
+
+```bash
+tgs sources list --archived
+```
+
+## Полная справка
+
+- [tgs sources list]({{< relref "/reference/commands/sources/list" >}}) — все флаги и поля вывода
+- [tgs sources inspect]({{< relref "/reference/commands/sources/inspect" >}}) — изучение одного источника
