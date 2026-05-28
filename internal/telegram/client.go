@@ -88,6 +88,21 @@ func Open(profileName string) (*Client, error) {
 	return &Client{api: api, session: sess}, nil
 }
 
+// OpenOrError is Open with an explicit error when the profile does not
+// exist. Use it in CLI commands that require an authenticated session — it
+// produces a single uniform "profile X not found" message naming both the
+// missing profile and the exact `tgs login` invocation that would fix it.
+func OpenOrError(profileName string) (*Client, error) {
+	c, err := Open(profileName)
+	if err != nil {
+		return nil, fmt.Errorf("open session: %w", err)
+	}
+	if c == nil {
+		return nil, fmt.Errorf("profile %q not found; run: tgs login --profile %s", profileName, profileName)
+	}
+	return c, nil
+}
+
 // Run connects to Telegram and executes fn within the authenticated session.
 func (c *Client) Run(ctx context.Context, fn func(ctx context.Context, api *tg.Client) error) error {
 	err := c.api.Run(ctx, func(ctx context.Context) error {

@@ -41,6 +41,11 @@ func newListCmd() *cobra.Command {
 			if flagLimit < 0 || flagLimit > 500 {
 				return fmt.Errorf("--limit must be 0..500, got %d", flagLimit)
 			}
+			if flagCursor != "" {
+				if _, err := sourcessvc.DecodeCursor(flagCursor); err != nil {
+					return fmt.Errorf("invalid --cursor value (must be a cursor string from a previous response): %w", err)
+				}
+			}
 
 			cwd, err := os.Getwd()
 			if err != nil {
@@ -48,12 +53,9 @@ func newListCmd() *cobra.Command {
 			}
 			profileName := profile.Resolve(flagProfile, cwd)
 
-			client, err := telegram.Open(profileName)
+			client, err := telegram.OpenOrError(profileName)
 			if err != nil {
-				return fmt.Errorf("open session: %w", err)
-			}
-			if client == nil {
-				return fmt.Errorf("run tgs login first")
+				return err
 			}
 			defer func() { _ = client.Close() }()
 
