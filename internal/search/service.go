@@ -33,7 +33,7 @@ type GlobalSearchRequest struct {
 	Filter       tg.MessagesFilterClass
 	After        int
 	Before       int
-	FolderID     int
+	Archived     bool
 	ChannelsOnly bool
 	GroupsOnly   bool
 	UsersOnly    bool
@@ -245,8 +245,8 @@ func (s *Service) SearchGlobal(ctx context.Context, req GlobalSearchRequest) (*S
 	if req.UsersOnly {
 		apiReq.SetUsersOnly(true)
 	}
-	if req.FolderID != 0 {
-		apiReq.SetFolderID(req.FolderID)
+	if req.Archived {
+		apiReq.SetFolderID(1)
 	}
 
 	if cur != nil {
