@@ -20,7 +20,7 @@ func newGlobalCmd() *cobra.Command {
 		flagChannelsOnly bool
 		flagGroupsOnly   bool
 		flagUsersOnly    bool
-		flagFolder       int
+		flagArchived     bool
 		flagFilter       string
 		flagAfter        string
 		flagBefore       string
@@ -94,7 +94,7 @@ func newGlobalCmd() *cobra.Command {
 					Filter:       filter,
 					After:        after,
 					Before:       before,
-					FolderID:     flagFolder,
+					Archived:     flagArchived,
 					ChannelsOnly: flagChannelsOnly,
 					GroupsOnly:   flagGroupsOnly,
 					UsersOnly:    flagUsersOnly,
@@ -113,7 +113,7 @@ func newGlobalCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&flagChannelsOnly, "channels-only", false, "search only in channels")
 	cmd.Flags().BoolVar(&flagGroupsOnly, "groups-only", false, "search only in groups")
 	cmd.Flags().BoolVar(&flagUsersOnly, "users-only", false, "search only in private chats")
-	cmd.Flags().IntVar(&flagFolder, "folder", 0, "search only in folder with this ID")
+	cmd.Flags().BoolVar(&flagArchived, "archived", false, "search in the archive folder instead of main")
 	cmd.Flags().StringVar(&flagFilter, "filter", "", "message type filter (photo, video, document, url, etc.)")
 	cmd.Flags().StringVar(&flagAfter, "after", "", "only messages after date (YYYY-MM-DD or unix timestamp)")
 	cmd.Flags().StringVar(&flagBefore, "before", "", "only messages before date (YYYY-MM-DD or unix timestamp)")
