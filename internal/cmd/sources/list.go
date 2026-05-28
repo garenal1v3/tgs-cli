@@ -27,6 +27,7 @@ func newListCmd() *cobra.Command {
 		flagMaxWait int
 		flagNoCache bool
 		flagProfile string
+		flagFolder  string
 	)
 
 	cmd := &cobra.Command{
@@ -40,6 +41,9 @@ func newListCmd() *cobra.Command {
 			}
 			if flagLimit < 0 || flagLimit > 500 {
 				return fmt.Errorf("--limit must be 0..500, got %d", flagLimit)
+			}
+			if flagCursor != "" && flagFolder != "" {
+				return fmt.Errorf("--cursor and --folder are mutually exclusive")
 			}
 			if flagCursor != "" {
 				if _, err := sourcessvc.DecodeCursor(flagCursor); err != nil {
@@ -96,6 +100,7 @@ func newListCmd() *cobra.Command {
 					Limit:     flagLimit,
 					Cursor:    flagCursor,
 					Archived:  flagArchive,
+					Folder:    flagFolder,
 				})
 				if err != nil {
 					return err
@@ -113,6 +118,7 @@ func newListCmd() *cobra.Command {
 	cmd.Flags().IntVar(&flagMaxWait, "max-wait", 60, "max seconds to wait on FLOOD_WAIT")
 	cmd.Flags().BoolVar(&flagNoCache, "no-cache", false, "disable peer and stats caches")
 	cmd.Flags().StringVarP(&flagProfile, "profile", "p", "", "account profile name")
+	cmd.Flags().StringVar(&flagFolder, "folder", "", "filter to chats inside this folder (id or name)")
 
 	return cmd
 }
