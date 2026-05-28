@@ -103,6 +103,23 @@ func writeCountersResult(w io.Writer, format string, result *search.CountersResu
 	return json.NewEncoder(w).Encode(result)
 }
 
+func writeMultiCountersResult(w io.Writer, format string, result *search.MultiCountersResult) error {
+	if format == "text" {
+		for _, pc := range result.Chats {
+			_, _ = fmt.Fprintf(w, "chat %d:\n", pc.Chat.ID)
+			for _, c := range pc.Counters {
+				_, _ = fmt.Fprintf(w, "  %-10s %d\n", c.Filter, c.Count)
+			}
+		}
+		_, _ = fmt.Fprintln(w, "totals:")
+		for _, c := range result.Totals {
+			_, _ = fmt.Fprintf(w, "  %-10s %d\n", c.Filter, c.Count)
+		}
+		return nil
+	}
+	return json.NewEncoder(w).Encode(result)
+}
+
 func writeCalendarResult(w io.Writer, format string, result *search.CalendarResult) error {
 	if format == "text" {
 		for _, p := range result.Periods {
