@@ -13,5 +13,3 @@ func NewSourcesCmd() *cobra.Command {
 	return cmd
 }
 
-func newListCmd() *cobra.Command    { return &cobra.Command{Use: "list", Hidden: true} }
-func newInspectCmd() *cobra.Command { return &cobra.Command{Use: "inspect", Hidden: true} }
