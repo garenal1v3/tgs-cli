@@ -20,17 +20,18 @@ import (
 
 func newMessagesCmd() *cobra.Command {
 	var (
-		flagChat    []string
-		flagFrom    string
-		flagFilter  string
-		flagAfter   string
-		flagBefore  string
-		flagTopic   int
-		flagLimit   int
-		flagCursor  string
-		flagMaxWait int
-		flagNoCache bool
-		flagProfile string
+		flagChat            []string
+		flagFrom            string
+		flagFilter          string
+		flagAfter           string
+		flagBefore          string
+		flagTopic           int
+		flagLimit           int
+		flagCursor          string
+		flagMaxWait         int
+		flagNoCache         bool
+		flagProfile         string
+		flagIncludeComments bool
 	)
 
 	cmd := &cobra.Command{
@@ -102,6 +103,11 @@ func newMessagesCmd() *cobra.Command {
 					return fmt.Errorf("resolve chats: %w", err)
 				}
 
+				if flagIncludeComments {
+					linked := resolveLinkedChats(ctx, api, peers)
+					peers = append(peers, linked...)
+				}
+
 				var fromPeer tg.InputPeerClass
 				if flagFrom != "" {
 					fromPeer, err = resolver.Resolve(ctx, flagFrom)
@@ -142,6 +148,7 @@ func newMessagesCmd() *cobra.Command {
 	cmd.Flags().StringVar(&flagCursor, "cursor", "", "pagination cursor from previous response")
 	cmd.Flags().IntVar(&flagMaxWait, "max-wait", 60, "max seconds to wait on FLOOD_WAIT")
 	cmd.Flags().BoolVar(&flagNoCache, "no-cache", false, "disable peer resolution cache")
+	cmd.Flags().BoolVar(&flagIncludeComments, "include-comments", false, "also search the linked discussion group of each channel")
 	cmd.Flags().StringVarP(&flagProfile, "profile", "p", "", "account profile name")
 
 	_ = cmd.MarkFlagRequired("chat")

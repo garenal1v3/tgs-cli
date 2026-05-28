@@ -31,6 +31,7 @@ tgs search messages [query] [flags]
 | `--cursor` | | string | | 上次响应中的分页游标 |
 | `--max-wait` | | int | `60` | FLOOD_WAIT 最大等待秒数 |
 | `--no-cache` | | bool | `false` | 禁用对等体解析缓存 |
+| `--include-comments` | | bool | `false` | 同时搜索每个频道关联的讨论组 |
 | `--profile` | `-p` | string | | 账户配置文件名称 |
 
 未设置 `--profile` 时的配置文件解析顺序：`TGS_PROFILE` 环境变量 -> `.tgs.yaml` 文件 -> `"default"`。

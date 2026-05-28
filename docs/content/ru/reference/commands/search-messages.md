@@ -31,6 +31,7 @@ tgs search messages [query] [flags]
 | `--cursor` | | string | | Курсор пагинации из предыдущего ответа |
 | `--max-wait` | | int | `60` | Максимум секунд ожидания при FLOOD_WAIT |
 | `--no-cache` | | bool | `false` | Отключить кеш разрешения пиров |
+| `--include-comments` | | bool | `false` | Также искать в дискуссионной группе каждого канала |
 | `--profile` | `-p` | string | | Имя профиля аккаунта |
 
 Порядок определения профиля, если `--profile` не указан: переменная `TGS_PROFILE` -> файл `.tgs.yaml` -> `"default"`.

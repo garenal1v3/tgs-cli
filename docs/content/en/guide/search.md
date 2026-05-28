@@ -98,6 +98,18 @@ tgs search messages "error" -c @dev_forum --topic 42
 
 Without `--topic`, the search covers all topics in the forum.
 
+## Searching Channel Comments
+
+Telegram channels can have a linked discussion group where comments under each post live. Use `--include-comments` to automatically search both the channel and its discussion group with a single command -- no need to look up the group's username:
+
+```bash
+tgs search messages "release" -c @somechannel --include-comments
+```
+
+Each channel in `--chat` is checked for a linked discussion group; if it has one, that group is added to the search transparently. Channels without comments are unaffected.
+
+Results merge posts and comments sorted by date. The `reply_to_msg_id` field on each comment points to the message it replies to, letting you reconstruct the discussion thread.
+
 ## Global Search
 
 Search across all your chats at once with `tgs search global`:

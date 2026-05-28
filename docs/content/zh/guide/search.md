@@ -124,6 +124,18 @@ tgs search messages "bug" -c @dev_group --topic 42
 
 `--topic` 接受论坛主题的消息 ID（即该主题的顶部消息 ID）。
 
+## 搜索频道评论
+
+Telegram 频道可以关联一个讨论组，帖子下方的评论都存放在该讨论组中。使用 `--include-comments` 标志可在一条命令中同时搜索频道及其关联讨论组 —— 无需查找讨论组的用户名：
+
+```bash
+tgs search messages "发布" -c @somechannel --include-comments
+```
+
+`--chat` 中的每个频道都会检查是否存在关联讨论组；若存在，该讨论组会被自动加入搜索。对于没有评论的频道，此标志不会产生影响。
+
+帖子和评论的结果会合并并按日期排序。每条评论的 `reply_to_msg_id` 字段指向其所回复的消息，便于重建讨论线索。
+
 ## 全局搜索
 
 `tgs search global` 跨所有聊天搜索消息，无需指定具体聊天：

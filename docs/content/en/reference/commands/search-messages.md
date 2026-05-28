@@ -29,6 +29,7 @@ The `query` argument is required and specifies the text to search for.
 | `--cursor` | | string | | Pagination cursor from previous response |
 | `--max-wait` | | int | `60` | Max seconds to wait on FLOOD_WAIT |
 | `--no-cache` | | bool | `false` | Disable peer resolution cache |
+| `--include-comments` | | bool | `false` | Also search the linked discussion group of each channel |
 | `--profile` | `-p` | string | | Account profile name |
 
 Profile resolution order when `--profile` is not set: `TGS_PROFILE` env -> `.tgs.yaml` file -> `"default"`.
