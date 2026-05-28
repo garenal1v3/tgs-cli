@@ -13,7 +13,7 @@ import (
 // InputPeerSelf entries in pinned/include lists. Auto-flag rules
 // (Task 5) extend this function.
 func matchFolder(filter tg.DialogFilterClass, dialogs []sourceWithPeer, selfID int64) []Source {
-	index := indexByPeer(dialogs, selfID)
+	index := indexByPeer(dialogs)
 	seen := make(map[peerKey]bool)
 	var out []Source
 
@@ -75,42 +75,50 @@ func folderPeers(filter tg.DialogFilterClass) (pinned, include []tg.InputPeerCla
 // peerKey is a comparable identifier for InputPeer/PeerUser/PeerChat/PeerChannel.
 // User/chat/channel ID spaces don't collide across kinds.
 type peerKey struct {
-	kind string // "user" | "chat" | "channel"
+	kind string // one of peerKindUser / peerKindChat / peerKindChannel
 	id   int64
 }
 
+const (
+	peerKindUser    = "user"
+	peerKindChat    = "chat"
+	peerKindChannel = "channel"
+)
+
 // indexByPeer builds a lookup map from sourceWithPeer.Peer (InputPeer) to the
 // dialog snapshot entry. Used by matchFolder to resolve pinned/include refs.
-func indexByPeer(dialogs []sourceWithPeer, selfID int64) map[peerKey]*sourceWithPeer {
+// Note: InputPeerSelf is NOT indexed here — it's expanded at lookup time
+// via keyFromInputPeer using the caller-supplied selfID.
+func indexByPeer(dialogs []sourceWithPeer) map[peerKey]*sourceWithPeer {
 	m := make(map[peerKey]*sourceWithPeer, len(dialogs))
 	for i := range dialogs {
 		switch p := dialogs[i].Peer.(type) {
 		case *tg.InputPeerUser:
-			m[peerKey{"user", p.UserID}] = &dialogs[i]
+			m[peerKey{peerKindUser, p.UserID}] = &dialogs[i]
 		case *tg.InputPeerChat:
-			m[peerKey{"chat", p.ChatID}] = &dialogs[i]
+			m[peerKey{peerKindChat, p.ChatID}] = &dialogs[i]
 		case *tg.InputPeerChannel:
-			m[peerKey{"channel", p.ChannelID}] = &dialogs[i]
+			m[peerKey{peerKindChannel, p.ChannelID}] = &dialogs[i]
 		}
 	}
 	return m
 }
 
 // keyFromInputPeer returns the peerKey for a folder's pinned/include peer.
-// InputPeerSelf resolves to ("user", selfID).
+// InputPeerSelf resolves to (peerKindUser, selfID).
 func keyFromInputPeer(p tg.InputPeerClass, selfID int64) (peerKey, bool) {
 	switch v := p.(type) {
 	case *tg.InputPeerUser:
-		return peerKey{"user", v.UserID}, true
+		return peerKey{peerKindUser, v.UserID}, true
 	case *tg.InputPeerChat:
-		return peerKey{"chat", v.ChatID}, true
+		return peerKey{peerKindChat, v.ChatID}, true
 	case *tg.InputPeerChannel:
-		return peerKey{"channel", v.ChannelID}, true
+		return peerKey{peerKindChannel, v.ChannelID}, true
 	case *tg.InputPeerSelf:
 		if selfID == 0 {
 			return peerKey{}, false
 		}
-		return peerKey{"user", selfID}, true
+		return peerKey{peerKindUser, selfID}, true
 	}
 	return peerKey{}, false
 }

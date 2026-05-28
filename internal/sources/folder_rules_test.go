@@ -119,6 +119,39 @@ func TestMatchFolder_PinnedPeerSelfResolvesBySelfID(t *testing.T) {
 	if len(got) != 1 || got[0].ID != 777 {
 		t.Fatalf("got = %+v", got)
 	}
+	if !got[0].Pinned {
+		t.Errorf("got[0].Pinned = false, want true (came via PinnedPeers)")
+	}
+}
+
+func TestMatchFolder_SelfWithZeroSelfIDSkipped(t *testing.T) {
+	dialogs := []sourceWithPeer{
+		swp(777, "user", "Me"),
+	}
+	filter := &tg.DialogFilter{
+		ID:          1,
+		Title:       tg.TextWithEntities{Text: "T"},
+		PinnedPeers: []tg.InputPeerClass{&tg.InputPeerSelf{}},
+	}
+	got := matchFolder(filter, dialogs, 0) // selfID=0 means unknown
+	if len(got) != 0 {
+		t.Errorf("got %d entries, want 0 (Self with unknown selfID must be skipped)", len(got))
+	}
+}
+
+func TestMatchFolder_ChatlistInclude(t *testing.T) {
+	dialogs := []sourceWithPeer{swp(-1000000000001, "channel", "A")}
+	filter := &tg.DialogFilterChatlist{
+		ID:    1,
+		Title: tg.TextWithEntities{Text: "Shared"},
+		IncludePeers: []tg.InputPeerClass{
+			&tg.InputPeerChannel{ChannelID: 1, AccessHash: 1},
+		},
+	}
+	got := matchFolder(filter, dialogs, 0)
+	if len(got) != 1 || got[0].ID != -1000000000001 {
+		t.Errorf("got = %+v", got)
+	}
 }
 
 func TestMatchFolder_PeerNotInDialogsSilentlySkipped(t *testing.T) {
