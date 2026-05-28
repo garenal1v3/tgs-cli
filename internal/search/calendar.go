@@ -54,3 +54,15 @@ func (s *Service) GetCalendar(ctx context.Context, req CalendarRequest) (*Calend
 		Total:   res.Count,
 	}, nil
 }
+
+// PerChatCalendar pairs a chat reference with its calendar periods.
+type PerChatCalendar struct {
+	Chat    ChatRef          `json:"chat"`
+	Periods []CalendarPeriod `json:"periods"`
+	Total   int              `json:"total"`
+}
+
+// MultiCalendarResult is the response shape for multi-chat (folder) queries.
+type MultiCalendarResult struct {
+	Chats []PerChatCalendar `json:"chats"`
+}

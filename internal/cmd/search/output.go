@@ -120,6 +120,19 @@ func writeMultiCountersResult(w io.Writer, format string, result *search.MultiCo
 	return json.NewEncoder(w).Encode(result)
 }
 
+func writeMultiCalendarResult(w io.Writer, format string, result *search.MultiCalendarResult) error {
+	if format == "text" {
+		for _, pc := range result.Chats {
+			_, _ = fmt.Fprintf(w, "chat %d (total=%d):\n", pc.Chat.ID, pc.Total)
+			for _, p := range pc.Periods {
+				_, _ = fmt.Fprintf(w, "  %s  count=%d  msg=%d..%d\n", p.Date, p.Count, p.MinMsgID, p.MaxMsgID)
+			}
+		}
+		return nil
+	}
+	return json.NewEncoder(w).Encode(result)
+}
+
 func writeCalendarResult(w io.Writer, format string, result *search.CalendarResult) error {
 	if format == "text" {
 		for _, p := range result.Periods {
