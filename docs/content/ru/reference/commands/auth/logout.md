@@ -1,6 +1,6 @@
 ---
 title: tgs logout
-weight: 11
+weight: 20
 ---
 
 # tgs logout
@@ -21,6 +21,22 @@ weight: 11
 
 {{< snippet "cmd-logout/examples.md" >}}
 
+## Вывод
+
+**JSON (по умолчанию):**
+
+```json
+{"profile":"default","status":"logged_out"}
+```
+
+**Текст (`--output text`):**
+
+```
+Logged out (profile: default)
+```
+
+Если профиль не залогинен, команда завершается ненулевым кодом и пишет ошибку в stderr.
+
 ## Примечания
 
 Выход выполняет два шага:
@@ -32,5 +48,5 @@ weight: 11
 
 ## Смотрите также
 
-- [tgs login]({{< relref "/reference/commands/login" >}})
+- [tgs login]({{< relref "/reference/commands/auth/login" >}})
 - [Руководство по аутентификации]({{< relref "/getting-started/authentication" >}})

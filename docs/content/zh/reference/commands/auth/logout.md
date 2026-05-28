@@ -1,6 +1,6 @@
 ---
 title: tgs logout
-weight: 11
+weight: 20
 ---
 
 # tgs logout
@@ -21,6 +21,22 @@ weight: 11
 
 {{< snippet "cmd-logout/examples.md" >}}
 
+## 输出
+
+**JSON（默认）：**
+
+```json
+{"profile":"default","status":"logged_out"}
+```
+
+**文本（`--output text`）：**
+
+```
+Logged out (profile: default)
+```
+
+若配置文件未登录，命令以非零退出码结束并将错误写入 stderr。
+
 ## 说明
 
 退出登录执行两个步骤：
@@ -32,5 +48,5 @@ weight: 11
 
 ## 另请参阅
 
-- [tgs login]({{< relref "/reference/commands/login" >}})
+- [tgs login]({{< relref "/reference/commands/auth/login" >}})
 - [身份验证指南]({{< relref "/getting-started/authentication" >}})

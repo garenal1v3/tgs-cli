@@ -1,6 +1,6 @@
 ---
 title: tgs whoami
-weight: 25
+weight: 20
 ---
 
 # tgs whoami
@@ -31,5 +31,5 @@ weight: 25
 
 ## 另请参阅
 
-- [tgs profile]({{< relref "/reference/commands/profile" >}})
+- [tgs profile]({{< relref "/reference/commands/account/profile" >}})
 - [配置文件指南]({{< relref "/guide/profiles" >}})

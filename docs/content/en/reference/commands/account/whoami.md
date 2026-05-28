@@ -1,6 +1,6 @@
 ---
 title: tgs whoami
-weight: 25
+weight: 20
 ---
 
 # tgs whoami
@@ -31,5 +31,5 @@ If the profile exists but is not logged in, the `user` field will be `null` (JSO
 
 ## See Also
 
-- [tgs profile]({{< relref "/reference/commands/profile" >}})
+- [tgs profile]({{< relref "/reference/commands/account/profile" >}})
 - [Profiles guide]({{< relref "/guide/profiles" >}})

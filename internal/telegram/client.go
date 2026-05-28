@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	gosession "github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
@@ -88,9 +90,18 @@ func Open(profileName string) (*Client, error) {
 
 // Run connects to Telegram and executes fn within the authenticated session.
 func (c *Client) Run(ctx context.Context, fn func(ctx context.Context, api *tg.Client) error) error {
-	return c.api.Run(ctx, func(ctx context.Context) error {
+	err := c.api.Run(ctx, func(ctx context.Context) error {
 		return fn(ctx, c.api.API())
 	})
+	if err != nil {
+		// gotd wraps callback errors with "callback: " prefix — strip it.
+		const prefix = "callback: "
+		msg := err.Error()
+		if strings.HasPrefix(msg, prefix) {
+			return fmt.Errorf("%s", msg[len(prefix):])
+		}
+	}
+	return err
 }
 
 // RawClient returns the underlying gotd/td telegram.Client.
@@ -140,6 +151,11 @@ func (c *Client) LoadMeta() (*UserInfo, error) {
 // same storage that was passed to telegram.NewClient.
 func (c *Client) SessionStorage() gosession.Storage {
 	return c.session
+}
+
+// CachePath returns the path to the peer cache database for the given profile.
+func CachePath(profileName string) string {
+	return filepath.Join(config.ProfileDir(profileName), "cache.db")
 }
 
 // Close releases the session database.

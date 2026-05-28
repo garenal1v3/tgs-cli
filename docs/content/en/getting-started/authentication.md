@@ -71,4 +71,4 @@ Logout revokes the session on Telegram servers and clears local session data.
 
 ## Full Flag Reference
 
-See [tgs login]({{< relref "/reference/commands/login" >}}) and [tgs logout]({{< relref "/reference/commands/logout" >}}) for all flags.
+See [tgs login]({{< relref "/reference/commands/auth/login" >}}) and [tgs logout]({{< relref "/reference/commands/auth/logout" >}}) for all flags.

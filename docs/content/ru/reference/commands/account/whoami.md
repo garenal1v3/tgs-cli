@@ -1,6 +1,6 @@
 ---
 title: tgs whoami
-weight: 25
+weight: 20
 ---
 
 # tgs whoami
@@ -29,5 +29,5 @@ weight: 25
 
 ## Смотрите также
 
-- [tgs profile]({{< relref "/reference/commands/profile" >}})
+- [tgs profile]({{< relref "/reference/commands/account/profile" >}})
 - [Руководство по профилям]({{< relref "/guide/profiles" >}})

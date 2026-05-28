@@ -70,6 +70,6 @@ tgs 会沿目录树向上查找 `.tgs.yaml`，因此它在所有子目录中同�
 
 ## 完整参考
 
-- [tgs profile]({{< relref "/reference/commands/profile" >}}) — list、switch、delete 子命令
-- [tgs whoami]({{< relref "/reference/commands/whoami" >}}) — 查看当前账户信息
+- [tgs profile]({{< relref "/reference/commands/account/profile" >}}) — list、switch、delete 子命令
+- [tgs whoami]({{< relref "/reference/commands/account/whoami" >}}) — 查看当前账户信息
 - [环境变量]({{< relref "/reference/environment" >}}) — 所有支持的环境变量
