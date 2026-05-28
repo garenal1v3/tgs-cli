@@ -4,9 +4,20 @@ import (
 	"bytes"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	sourcessvc "github.com/searchtgcli/tgs/internal/sources"
 )
+
+func TestTrunc_HandlesCyrillic(t *testing.T) {
+	got := trunc("ПриветМирЭтоДлинноеНазвание", 10)
+	if utf8.RuneCountInString(got) != 10 {
+		t.Errorf("expected 10 runes, got %d in %q", utf8.RuneCountInString(got), got)
+	}
+	if !utf8.ValidString(got) {
+		t.Errorf("output is not valid UTF-8: %q", got)
+	}
+}
 
 func TestWriteSource_TextHasKeyLines(t *testing.T) {
 	src := &sourcessvc.Source{
