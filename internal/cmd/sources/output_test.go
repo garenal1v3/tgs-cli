@@ -132,3 +132,55 @@ func TestWriteSourceList_JSON(t *testing.T) {
 		t.Errorf("expected id:1 in JSON, got: %s", buf.String())
 	}
 }
+
+func TestWriteFoldersResult_JSON(t *testing.T) {
+	res := &sourcessvc.FoldersResult{
+		Folders: []sourcessvc.Folder{
+			{
+				ID: 2, Kind: "custom", Title: "Crypto", Emoticon: "💰",
+				ChatsCount: 1,
+				Chats: []sourcessvc.Source{
+					{ID: -1000000000001, Type: "channel", Title: "BTC", Username: "btc"},
+				},
+			},
+		},
+		Total: 1,
+	}
+	var buf bytes.Buffer
+	if err := writeFoldersResult(&buf, "json", res); err != nil {
+		t.Fatal(err)
+	}
+	got := buf.String()
+	if !strings.Contains(got, `"title":"Crypto"`) {
+		t.Errorf("missing title: %s", got)
+	}
+	if !strings.Contains(got, `"kind":"custom"`) {
+		t.Errorf("missing kind: %s", got)
+	}
+}
+
+func TestWriteFoldersResult_Text(t *testing.T) {
+	res := &sourcessvc.FoldersResult{
+		Folders: []sourcessvc.Folder{
+			{
+				ID: 2, Kind: "custom", Title: "Crypto", Emoticon: "💰",
+				ChatsCount: 1,
+				Chats: []sourcessvc.Source{
+					{ID: -1000000000001, Type: "channel", Title: "BTC", Username: "btc"},
+				},
+			},
+		},
+		Total: 1,
+	}
+	var buf bytes.Buffer
+	if err := writeFoldersResult(&buf, "text", res); err != nil {
+		t.Fatal(err)
+	}
+	got := buf.String()
+	if !strings.Contains(got, "Crypto") || !strings.Contains(got, "id=2") {
+		t.Errorf("text missing title/id: %s", got)
+	}
+	if !strings.Contains(got, "BTC") || !strings.Contains(got, "@btc") {
+		t.Errorf("text missing chat row: %s", got)
+	}
+}
