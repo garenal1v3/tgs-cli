@@ -28,23 +28,109 @@ func NewResolver(api API, cache *PeerCache) *Resolver {
 
 // Resolve parses a single input string and returns the corresponding InputPeerClass.
 func (r *Resolver) Resolve(ctx context.Context, input string) (tg.InputPeerClass, error) {
+	peer, _, err := r.ResolveWithMeta(ctx, input)
+	return peer, err
+}
+
+// ResolveMeta carries additional information about the resolved peer that
+// some callers need but is not part of the InputPeer itself.
+type ResolveMeta struct {
+	PeerType string // "user" | "chat" | "channel"
+
+	// Subscribed indicates whether the authenticated user is a member of the
+	// resolved peer. Only set (non-nil) for channels resolved live via
+	// contacts.resolveUsername — nil means "unknown" (cache hit, ID lookup,
+	// or non-channel peer).
+	Subscribed *bool
+}
+
+// ResolveWithMeta is like Resolve but also returns peer-level metadata
+// extracted from the Telegram response (e.g. whether we're subscribed to a
+// resolved channel).
+func (r *Resolver) ResolveWithMeta(ctx context.Context, input string) (tg.InputPeerClass, ResolveMeta, error) {
 	pi, err := ParseInput(input)
 	if err != nil {
-		return nil, fmt.Errorf("parse input %q: %w", input, err)
+		return nil, ResolveMeta{}, fmt.Errorf("parse input %q: %w", input, err)
 	}
-
 	switch pi.Type {
 	case InputUsername:
-		return r.resolveUsername(ctx, pi.Value)
+		return r.resolveUsernameWithMeta(ctx, pi.Value)
 	case InputPhone:
-		return r.resolvePhone(ctx, pi.Value)
+		peer, err := r.resolvePhone(ctx, pi.Value)
+		if err != nil {
+			return nil, ResolveMeta{}, err
+		}
+		return peer, ResolveMeta{PeerType: peerTypeOf(peer)}, nil
 	case InputID:
-		return r.resolveID(pi.ID), nil
+		peer := r.resolveID(pi.ID)
+		return peer, ResolveMeta{PeerType: peerTypeOf(peer)}, nil
 	case InputInvite:
-		return nil, fmt.Errorf("invite links are not supported for search")
+		return nil, ResolveMeta{}, fmt.Errorf("invite links are not supported for search")
 	default:
-		return nil, fmt.Errorf("unknown input type: %d", pi.Type)
+		return nil, ResolveMeta{}, fmt.Errorf("unknown input type: %d", pi.Type)
 	}
+}
+
+// resolveUsernameWithMeta mirrors resolveUsername but also returns ResolveMeta
+// (including Channel.Left -> Subscribed) when the resolution is live.
+func (r *Resolver) resolveUsernameWithMeta(ctx context.Context, username string) (tg.InputPeerClass, ResolveMeta, error) {
+	// Cache hit: we don't have a fresh Channel object, so Subscribed is unknown.
+	if r.cache != nil {
+		entry, found, err := r.cache.Load(username)
+		if err != nil {
+			return nil, ResolveMeta{}, fmt.Errorf("cache load %q: %w", username, err)
+		}
+		if found {
+			return entryToPeer(entry), ResolveMeta{PeerType: entry.PeerType}, nil
+		}
+	}
+
+	res, err := r.api.ContactsResolveUsername(ctx, &tg.ContactsResolveUsernameRequest{
+		Username: username,
+	})
+	if err != nil {
+		return nil, ResolveMeta{}, fmt.Errorf("resolve username %q: %w", username, err)
+	}
+
+	peer, entry, err := resolvedToPeer(res)
+	if err != nil {
+		return nil, ResolveMeta{}, err
+	}
+
+	meta := ResolveMeta{PeerType: entry.PeerType}
+	if entry.PeerType == "channel" {
+		for _, c := range res.Chats {
+			ch, ok := c.(*tg.Channel)
+			if !ok || ch.GetID() != entry.ID {
+				continue
+			}
+			sub := !ch.Left
+			meta.Subscribed = &sub
+			break
+		}
+	}
+
+	// Store in cache.
+	if r.cache != nil {
+		if storeErr := r.cache.Store(username, entry); storeErr != nil {
+			return nil, ResolveMeta{}, fmt.Errorf("cache store %q: %w", username, storeErr)
+		}
+	}
+
+	return peer, meta, nil
+}
+
+// peerTypeOf returns the string label for an InputPeerClass.
+func peerTypeOf(peer tg.InputPeerClass) string {
+	switch peer.(type) {
+	case *tg.InputPeerUser:
+		return "user"
+	case *tg.InputPeerChat:
+		return "chat"
+	case *tg.InputPeerChannel:
+		return "channel"
+	}
+	return ""
 }
 
 // ResolveMulti resolves multiple inputs sequentially, returning a slice of peers
@@ -59,41 +145,6 @@ func (r *Resolver) ResolveMulti(ctx context.Context, inputs []string) ([]tg.Inpu
 		peers = append(peers, peer)
 	}
 	return peers, nil
-}
-
-// resolveUsername resolves a username via cache (if available) or the Telegram API.
-func (r *Resolver) resolveUsername(ctx context.Context, username string) (tg.InputPeerClass, error) {
-	// Check cache first.
-	if r.cache != nil {
-		entry, found, err := r.cache.Load(username)
-		if err != nil {
-			return nil, fmt.Errorf("cache load %q: %w", username, err)
-		}
-		if found {
-			return entryToPeer(entry), nil
-		}
-	}
-
-	res, err := r.api.ContactsResolveUsername(ctx, &tg.ContactsResolveUsernameRequest{
-		Username: username,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("resolve username %q: %w", username, err)
-	}
-
-	peer, entry, err := resolvedToPeer(res)
-	if err != nil {
-		return nil, err
-	}
-
-	// Store in cache.
-	if r.cache != nil {
-		if storeErr := r.cache.Store(username, entry); storeErr != nil {
-			return nil, fmt.Errorf("cache store %q: %w", username, storeErr)
-		}
-	}
-
-	return peer, nil
 }
 
 // resolvePhone resolves a phone number via the Telegram API.

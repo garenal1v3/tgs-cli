@@ -10,6 +10,7 @@ import (
 	"github.com/gotd/td/tg"
 )
 
+
 // mockAPI implements the API interface for testing.
 type mockAPI struct {
 	resolveUsername func(ctx context.Context, req *tg.ContactsResolveUsernameRequest) (*tg.ContactsResolvedPeer, error)
@@ -241,5 +242,94 @@ func TestResolver_ResolveInvite(t *testing.T) {
 	_, err := r.Resolve(context.Background(), "t.me/+abc123invite")
 	if err == nil {
 		t.Fatal("expected error for invite link, got nil")
+	}
+}
+
+func TestResolver_ResolveWithMeta_ChannelSubscribed(t *testing.T) {
+	ch := &tg.Channel{ID: 1234, Title: "Pub", Broadcast: true, Left: false}
+	ch.SetAccessHash(99)
+	ch.SetUsername("pubch")
+	api := &mockAPI{
+		resolveUsername: func(_ context.Context, _ *tg.ContactsResolveUsernameRequest) (*tg.ContactsResolvedPeer, error) {
+			return &tg.ContactsResolvedPeer{
+				Peer:  &tg.PeerChannel{ChannelID: 1234},
+				Chats: []tg.ChatClass{ch},
+			}, nil
+		},
+	}
+	r := NewResolver(api, nil)
+	_, meta, err := r.ResolveWithMeta(context.Background(), "@pubch")
+	if err != nil {
+		t.Fatalf("ResolveWithMeta: %v", err)
+	}
+	if meta.PeerType != "channel" {
+		t.Errorf("PeerType = %q, want channel", meta.PeerType)
+	}
+	if meta.Subscribed == nil || *meta.Subscribed != true {
+		t.Errorf("Subscribed = %v, want *true", meta.Subscribed)
+	}
+}
+
+func TestResolver_ResolveWithMeta_ChannelLeft(t *testing.T) {
+	ch := &tg.Channel{ID: 1234, Title: "Pub", Broadcast: true, Left: true}
+	ch.SetAccessHash(99)
+	ch.SetUsername("pubch")
+	api := &mockAPI{
+		resolveUsername: func(_ context.Context, _ *tg.ContactsResolveUsernameRequest) (*tg.ContactsResolvedPeer, error) {
+			return &tg.ContactsResolvedPeer{
+				Peer:  &tg.PeerChannel{ChannelID: 1234},
+				Chats: []tg.ChatClass{ch},
+			}, nil
+		},
+	}
+	r := NewResolver(api, nil)
+	_, meta, err := r.ResolveWithMeta(context.Background(), "@pubch")
+	if err != nil {
+		t.Fatalf("ResolveWithMeta: %v", err)
+	}
+	if meta.Subscribed == nil || *meta.Subscribed != false {
+		t.Errorf("Subscribed = %v, want *false", meta.Subscribed)
+	}
+}
+
+func TestResolver_ResolveWithMeta_CacheHitNoSubscribedInfo(t *testing.T) {
+	cache, err := NewPeerCache(filepath.Join(t.TempDir(), "c.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cache.Close()
+	_ = cache.Store("cached", CacheEntry{
+		PeerType: "channel", ID: 7, AccessHash: 11, ResolvedAt: time.Now().Unix(),
+	})
+
+	r := NewResolver(nil, cache)
+	_, meta, err := r.ResolveWithMeta(context.Background(), "@cached")
+	if err != nil {
+		t.Fatalf("ResolveWithMeta: %v", err)
+	}
+	if meta.PeerType != "channel" {
+		t.Errorf("PeerType = %q", meta.PeerType)
+	}
+	if meta.Subscribed != nil {
+		t.Errorf("Subscribed should be nil for cache hits (no fresh Left flag), got %v", *meta.Subscribed)
+	}
+}
+
+func TestResolver_ResolveWithMeta_UserNoSubscribed(t *testing.T) {
+	api := &mockAPI{
+		resolveUsername: func(_ context.Context, _ *tg.ContactsResolveUsernameRequest) (*tg.ContactsResolvedPeer, error) {
+			return makeUserResolved(42, 99), nil
+		},
+	}
+	r := NewResolver(api, nil)
+	_, meta, err := r.ResolveWithMeta(context.Background(), "@alice")
+	if err != nil {
+		t.Fatalf("ResolveWithMeta: %v", err)
+	}
+	if meta.PeerType != "user" {
+		t.Errorf("PeerType = %q, want user", meta.PeerType)
+	}
+	if meta.Subscribed != nil {
+		t.Error("Subscribed should be nil for users")
 	}
 }
