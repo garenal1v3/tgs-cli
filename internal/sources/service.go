@@ -3,8 +3,11 @@ package sources
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
+
+	"github.com/gotd/td/tg"
 
 	"github.com/searchtgcli/tgs/internal/resolve"
 	"github.com/searchtgcli/tgs/internal/retry"
@@ -109,9 +112,109 @@ func filterByType(items []sourceWithPeer, keep []string) []sourceWithPeer {
 	return out
 }
 
-// Inspect is implemented in Task 10.
+// Inspect resolves ref via the Resolver (using ResolveWithMeta to capture
+// subscription state for channels) then fetches full info + (optionally)
+// stats. Supports refs the user is not subscribed to (channels/users by
+// @username or phone).
 func (s *Service) Inspect(ctx context.Context, req InspectRequest) (*Source, error) {
-	return nil, errors.New("not implemented yet")
+	if s.resolver == nil {
+		return nil, errors.New("inspect requires a resolver")
+	}
+	ref := strings.TrimSpace(req.Ref)
+
+	peer, subscribed, src, err := s.resolveForInspect(ctx, ref)
+	if err != nil {
+		return nil, err
+	}
+	return s.inspectKnownWithSubscription(ctx, src, peer, req.NoStats, subscribed)
+}
+
+// resolveForInspect resolves ref to an InputPeer, an initial Source seed (with
+// type/title/etc), and a *bool indicating subscription state. Returns
+// subscribed=nil for users/bots (subscription concept doesn't apply) and for
+// channels resolved from cache or by numeric ID (Left flag unknown — falls
+// back to error-code detection in inspectKnownWithSubscription).
+func (s *Service) resolveForInspect(ctx context.Context, ref string) (tg.InputPeerClass, *bool, Source, error) {
+	// Self alias.
+	if ref == "@me" || ref == "-" {
+		if s.selfID == 0 {
+			return nil, nil, Source{}, errors.New("self ID is unknown")
+		}
+		yes := true
+		return &tg.InputPeerSelf{}, &yes, Source{
+			ID: s.selfID, Type: "user", Saved: true, Title: "Saved Messages",
+		}, nil
+	}
+
+	peer, meta, err := s.resolver.ResolveWithMeta(ctx, ref)
+	if err != nil {
+		return nil, nil, Source{}, err
+	}
+
+	// Build a seed Source from peer type. Concrete fields are filled by fetchFull.
+	var src Source
+	switch p := peer.(type) {
+	case *tg.InputPeerChannel:
+		src = Source{ID: botAPIChannelID(p.ChannelID), Type: "channel"}
+	case *tg.InputPeerChat:
+		src = Source{ID: -p.ChatID, Type: "group"}
+	case *tg.InputPeerUser:
+		src = Source{ID: p.UserID, Type: "user"}
+	default:
+		return nil, nil, Source{}, fmt.Errorf("unsupported peer type: %T", peer)
+	}
+	return peer, meta.Subscribed, src, nil
+}
+
+// inspectKnown is the entry point used by tests that supply a known peer.
+// It sets subscribed=*true and delegates to inspectKnownWithSubscription.
+func (s *Service) inspectKnown(ctx context.Context, src Source, peer tg.InputPeerClass, noStats bool) (*Source, error) {
+	yes := true
+	return s.inspectKnownWithSubscription(ctx, src, peer, noStats, &yes)
+}
+
+// inspectKnownWithSubscription completes a Source by pulling full info and
+// (optionally) stats. If subscribed is *false, stats are skipped and set to nil.
+//
+// subscribed may be nil ("unknown") — in that case we still try fetchFull and
+// only conclude "not subscribed" if the API returns an access-denied error.
+func (s *Service) inspectKnownWithSubscription(ctx context.Context, src Source, peer tg.InputPeerClass, noStats bool, subscribed *bool) (*Source, error) {
+	src.Subscribed = subscribed
+
+	// Skip the network call entirely if we already know we're not subscribed.
+	if subscribed != nil && !*subscribed {
+		return &src, nil
+	}
+
+	payload, err := s.fetchFull(ctx, src, peer)
+	if err == nil {
+		applyPayload(&src, payload)
+	} else {
+		code := telegramErrorCode(err)
+		src.StatsError = code
+		// Fallback for subscribed==nil paths (cache hit, numeric ID): if
+		// full-info fetch fails with a "no access" code, conclude not subscribed.
+		if code == "CHANNEL_PRIVATE" || code == "USER_PRIVACY_RESTRICTED" || code == "CHANNEL_INVALID" {
+			no := false
+			src.Subscribed = &no
+			return &src, nil
+		}
+	}
+
+	if noStats {
+		return &src, nil
+	}
+
+	stats, err := s.fetchStats(ctx, peer)
+	if err != nil {
+		// Don't overwrite an existing stats_error from full info.
+		if src.StatsError == "" {
+			src.StatsError = telegramErrorCode(err)
+		}
+		return &src, nil
+	}
+	src.Stats = stats
+	return &src, nil
 }
 
 const activeWindow = 7 * 24 * time.Hour

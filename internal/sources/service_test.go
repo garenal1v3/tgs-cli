@@ -154,6 +154,81 @@ func TestService_List_WithStats_ActiveSourceSkipsCache(t *testing.T) {
 	}
 }
 
+func TestService_Inspect_Subscribed(t *testing.T) {
+	api := &mockAPI{
+		getFullChannel: func(_ context.Context, _ tg.InputChannelClass) (*tg.MessagesChatFull, error) {
+			return &tg.MessagesChatFull{FullChat: &tg.ChannelFull{ID: 1, About: "hi"}}, nil
+		},
+		search: func(_ context.Context, _ *tg.MessagesSearchRequest) (tg.MessagesMessagesClass, error) {
+			return &tg.MessagesMessagesSlice{Count: 7}, nil
+		},
+		getHistory: func(_ context.Context, _ *tg.MessagesGetHistoryRequest) (tg.MessagesMessagesClass, error) {
+			return &tg.MessagesMessagesSlice{Messages: nil}, nil
+		},
+	}
+	s := New(api, nil, nil, nil, 0)
+	src, err := s.inspectKnown(context.Background(), Source{
+		ID: -1000000000001, Type: "channel",
+	}, &tg.InputPeerChannel{ChannelID: 1, AccessHash: 1}, false)
+	if err != nil {
+		t.Fatalf("inspectKnown: %v", err)
+	}
+	if src.Stats == nil || src.Stats.TotalMessages != 7 {
+		t.Errorf("Stats = %+v", src.Stats)
+	}
+	if src.Subscribed == nil || *src.Subscribed != true {
+		t.Errorf("Subscribed = %+v, want true", src.Subscribed)
+	}
+}
+
+func TestService_Inspect_NotSubscribedSkipsAllCalls(t *testing.T) {
+	called := false
+	api := &mockAPI{
+		getFullChannel: func(_ context.Context, _ tg.InputChannelClass) (*tg.MessagesChatFull, error) {
+			called = true
+			return nil, errors.New("should not be called")
+		},
+	}
+	s := New(api, nil, nil, nil, 0)
+	notSubscribed := false
+	src, err := s.inspectKnownWithSubscription(context.Background(), Source{
+		ID: -1000000000001, Type: "channel",
+	}, &tg.InputPeerChannel{ChannelID: 1, AccessHash: 1}, false, &notSubscribed)
+	if err != nil {
+		t.Fatalf("inspect: %v", err)
+	}
+	if called {
+		t.Error("fetchFull should be skipped when subscribed is *false")
+	}
+	if src.Subscribed == nil || *src.Subscribed != false {
+		t.Errorf("Subscribed = %+v, want *false", src.Subscribed)
+	}
+	if src.Stats != nil {
+		t.Errorf("Stats should be nil, got %+v", src.Stats)
+	}
+}
+
+func TestService_Inspect_UnknownSubscribed_FallsBackToErrorCode(t *testing.T) {
+	api := &mockAPI{
+		getFullChannel: func(_ context.Context, _ tg.InputChannelClass) (*tg.MessagesChatFull, error) {
+			return nil, errors.New("rpc error code 400: CHANNEL_PRIVATE (caused by ...)")
+		},
+	}
+	s := New(api, nil, nil, nil, 0)
+	src, err := s.inspectKnownWithSubscription(context.Background(), Source{
+		ID: -1000000000001, Type: "channel",
+	}, &tg.InputPeerChannel{ChannelID: 1, AccessHash: 1}, false, nil)
+	if err != nil {
+		t.Fatalf("inspect: %v", err)
+	}
+	if src.Subscribed == nil || *src.Subscribed != false {
+		t.Errorf("Subscribed = %+v, want *false (inferred from CHANNEL_PRIVATE)", src.Subscribed)
+	}
+	if src.StatsError != "CHANNEL_PRIVATE" {
+		t.Errorf("StatsError = %q", src.StatsError)
+	}
+}
+
 func TestTelegramErrorCode(t *testing.T) {
 	tests := []struct {
 		name string
