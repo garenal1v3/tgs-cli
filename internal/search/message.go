@@ -9,16 +9,24 @@ type SearchResult struct {
 
 // Message represents a single Telegram message in search results.
 type Message struct {
-	ID           int        `json:"id"`
-	Chat         ChatInfo   `json:"chat"`
-	From         *UserInfo  `json:"from,omitempty"`
-	Date         string     `json:"date"`
-	Text         string     `json:"text"`
-	Media        *MediaInfo `json:"media,omitempty"`
-	ReplyToMsgID int        `json:"reply_to_msg_id,omitempty"`
-	TopicID      int        `json:"topic_id,omitempty"`
-	Views        int        `json:"views,omitempty"`
-	Forwards     int        `json:"forwards,omitempty"`
+	ID           int             `json:"id"`
+	Chat         ChatInfo        `json:"chat"`
+	From         *UserInfo       `json:"from,omitempty"`
+	Date         string          `json:"date"`
+	Text         string          `json:"text"`
+	Media        *MediaInfo      `json:"media,omitempty"`
+	ReplyToMsgID int             `json:"reply_to_msg_id,omitempty"`
+	TopicID      int             `json:"topic_id,omitempty"`
+	Views        int             `json:"views,omitempty"`
+	Forwards     int             `json:"forwards,omitempty"`
+	Replies      int             `json:"replies,omitempty"`
+	Reactions    []ReactionCount `json:"reactions,omitempty"`
+}
+
+// ReactionCount describes a single reaction with its count.
+type ReactionCount struct {
+	Emoji string `json:"emoji"`
+	Count int    `json:"count"`
 }
 
 // ChatInfo describes the chat a message belongs to.

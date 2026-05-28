@@ -61,10 +61,28 @@ func writeSearchResult(w io.Writer, format string, result *search.SearchResult) 
 			}
 			text = strings.ReplaceAll(text, "\n", " ")
 
+			stats := []string{}
+			if m.Views > 0 {
+				stats = append(stats, fmt.Sprintf("👁 %d", m.Views))
+			}
+			if m.Forwards > 0 {
+				stats = append(stats, fmt.Sprintf("↻ %d", m.Forwards))
+			}
+			if m.Replies > 0 {
+				stats = append(stats, fmt.Sprintf("💬 %d", m.Replies))
+			}
+			for _, r := range m.Reactions {
+				stats = append(stats, fmt.Sprintf("%s %d", r.Emoji, r.Count))
+			}
+			statsStr := ""
+			if len(stats) > 0 {
+				statsStr = " [" + strings.Join(stats, " ") + "]"
+			}
+
 			if from != "" {
-				_, _ = fmt.Fprintf(w, "[%s] %s | %s: %s\n", date, chatName, from, text)
+				_, _ = fmt.Fprintf(w, "[%s] %s | %s: %s%s\n", date, chatName, from, text, statsStr)
 			} else {
-				_, _ = fmt.Fprintf(w, "[%s] %s: %s\n", date, chatName, text)
+				_, _ = fmt.Fprintf(w, "[%s] %s: %s%s\n", date, chatName, text, statsStr)
 			}
 		}
 		if result.Cursor != "" {

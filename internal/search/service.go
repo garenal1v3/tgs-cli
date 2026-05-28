@@ -382,6 +382,29 @@ func convertMessage(m *tg.Message, chatMap map[int64]ChatInfo, userMap map[int64
 		msg.Forwards = forwards
 	}
 
+	// Replies count (channel post comments).
+	if replies, ok := m.GetReplies(); ok {
+		msg.Replies = replies.Replies
+	}
+
+	// Reactions.
+	if reactions, ok := m.GetReactions(); ok {
+		for _, r := range reactions.Results {
+			rc := ReactionCount{Count: r.Count}
+			switch v := r.Reaction.(type) {
+			case *tg.ReactionEmoji:
+				rc.Emoji = v.Emoticon
+			case *tg.ReactionCustomEmoji:
+				rc.Emoji = fmt.Sprintf("custom:%d", v.DocumentID)
+			case *tg.ReactionPaid:
+				rc.Emoji = "⭐"
+			default:
+				continue
+			}
+			msg.Reactions = append(msg.Reactions, rc)
+		}
+	}
+
 	// Reply info.
 	if replyTo, ok := m.GetReplyTo(); ok {
 		if rh, ok := replyTo.(*tg.MessageReplyHeader); ok {
