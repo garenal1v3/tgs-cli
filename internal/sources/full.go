@@ -78,15 +78,17 @@ func (s *Service) fetchFull(ctx context.Context, src Source, peer tg.InputPeerCl
 		return p, nil
 
 	case "user", "bot":
-		userPeer, ok := peer.(*tg.InputPeerUser)
-		if !ok {
-			return nil, fmt.Errorf("user source needs InputPeerUser, got %T", peer)
+		var inputUser tg.InputUserClass
+		switch p := peer.(type) {
+		case *tg.InputPeerUser:
+			inputUser = &tg.InputUser{UserID: p.UserID, AccessHash: p.AccessHash}
+		case *tg.InputPeerSelf:
+			inputUser = &tg.InputUserSelf{}
+		default:
+			return nil, fmt.Errorf("user source needs InputPeerUser or InputPeerSelf, got %T", peer)
 		}
 		res, err := retry.Do(ctx, s.retry, func() (*tg.UsersUserFull, error) {
-			r, err := s.api.UsersGetFullUser(ctx, &tg.InputUser{
-				UserID:     userPeer.UserID,
-				AccessHash: userPeer.AccessHash,
-			})
+			r, err := s.api.UsersGetFullUser(ctx, inputUser)
 			return r, retry.ClassifyError(err)
 		})
 		if err != nil {

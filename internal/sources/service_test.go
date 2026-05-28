@@ -229,6 +229,125 @@ func TestService_Inspect_UnknownSubscribed_FallsBackToErrorCode(t *testing.T) {
 	}
 }
 
+// TestService_List_FilterBeforeLimit verifies that --type filtering is applied
+// per page BEFORE the limit check, so limit=2 with type=bot correctly returns
+// bots even when the first page dialogs are non-bot.
+//
+// The mock returns pageSize (2) items on page 1 (both channels, no bots) and
+// a bot on page 2 — simulating a Telegram account where the first N dialogs
+// are all channels and bots appear later.
+//
+// Without the fix, after page 1 len(all)=2 >= limit=2 → loop breaks → 0 bots.
+// With the fix, page 1 is filtered first → len(all)=0 < 2 → loop continues
+// → page 2 finds the bot → 1 bot returned.
+func TestService_List_FilterBeforeLimit(t *testing.T) {
+	callCount := 0
+	api := &mockAPI{
+		getDialogs: func(_ context.Context, req *tg.MessagesGetDialogsRequest) (tg.MessagesDialogsClass, error) {
+			callCount++
+			switch callCount {
+			case 1:
+				// Return 2 channels (filling the pageSize of 2). Count=10 so
+				// len(dialogs)=2 >= limit=2 → cursor is generated → next page.
+				ch1 := &tg.Channel{ID: 1, Title: "Ch1", Broadcast: true}
+				ch1.SetAccessHash(1)
+				ch2 := &tg.Channel{ID: 2, Title: "Ch2", Broadcast: true}
+				ch2.SetAccessHash(2)
+				return &tg.MessagesDialogsSlice{
+					Count: 10,
+					Dialogs: []tg.DialogClass{
+						&tg.Dialog{Peer: &tg.PeerChannel{ChannelID: 1}, TopMessage: 10},
+						&tg.Dialog{Peer: &tg.PeerChannel{ChannelID: 2}, TopMessage: 9},
+					},
+					Messages: []tg.MessageClass{
+						&tg.Message{ID: 10, Date: 1700000010},
+						&tg.Message{ID: 9, Date: 1700000009},
+					},
+					Chats: []tg.ChatClass{ch1, ch2},
+					Users: []tg.UserClass{},
+				}, nil
+			default:
+				// Page 2: return the bot. Use MessagesDialogs (no cursor) to
+				// signal end of list.
+				bot := &tg.User{ID: 10, Bot: true}
+				bot.SetFirstName("MyBot")
+				bot.SetAccessHash(10)
+				return &tg.MessagesDialogs{
+					Dialogs:  []tg.DialogClass{&tg.Dialog{Peer: &tg.PeerUser{UserID: 10}, TopMessage: 3}},
+					Messages: []tg.MessageClass{&tg.Message{ID: 3, Date: 1700000000}},
+					Chats:    []tg.ChatClass{},
+					Users:    []tg.UserClass{bot},
+				}, nil
+			}
+		},
+	}
+	s := New(api, nil, nil, nil, 0)
+	got, err := s.List(context.Background(), ListRequest{Types: []string{"bot"}, Limit: 2})
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if len(got.Sources) != 1 {
+		t.Fatalf("expected 1 bot, got %d: %+v", len(got.Sources), got.Sources)
+	}
+	if got.Sources[0].Type != "bot" {
+		t.Errorf("Source.Type = %q, want bot", got.Sources[0].Type)
+	}
+	// Total must still reflect server-reported count (pre-filter).
+	if got.Total != 10 {
+		t.Errorf("Total = %d, want 10 (server-reported, not filtered)", got.Total)
+	}
+}
+
+// TestService_Inspect_SelfPeerNoStatsError verifies that inspecting Saved
+// Messages ("-") returns valid stats and no stats_error, even though the
+// peer is *tg.InputPeerSelf (not *tg.InputPeerUser).
+func TestService_Inspect_SelfPeerNoStatsError(t *testing.T) {
+	const selfID int64 = 12345
+
+	api := &mockAPI{
+		getFullUser: func(_ context.Context, u tg.InputUserClass) (*tg.UsersUserFull, error) {
+			// Accept both InputUserSelf (Saved Messages path) and InputUser.
+			switch u.(type) {
+			case *tg.InputUserSelf, *tg.InputUser:
+			default:
+				t.Errorf("unexpected InputUserClass type: %T", u)
+			}
+			full := &tg.UserFull{ID: selfID}
+			full.SetAbout("myself")
+			return &tg.UsersUserFull{FullUser: *full}, nil
+		},
+		search: func(_ context.Context, _ *tg.MessagesSearchRequest) (tg.MessagesMessagesClass, error) {
+			return &tg.MessagesMessagesSlice{Count: 42}, nil
+		},
+		getHistory: func(_ context.Context, _ *tg.MessagesGetHistoryRequest) (tg.MessagesMessagesClass, error) {
+			return &tg.MessagesMessagesSlice{Messages: nil}, nil
+		},
+	}
+	s := New(api, nil, nil, nil, selfID)
+	src, err := s.inspectKnownWithSubscription(
+		context.Background(),
+		Source{ID: selfID, Type: "user", Saved: true, Title: "Saved Messages"},
+		&tg.InputPeerSelf{},
+		false,
+		func() *bool { v := true; return &v }(),
+	)
+	if err != nil {
+		t.Fatalf("inspect: %v", err)
+	}
+	if src.StatsError != "" {
+		t.Errorf("StatsError = %q, want empty", src.StatsError)
+	}
+	if src.Stats == nil {
+		t.Fatal("Stats is nil, want non-nil")
+	}
+	if src.Stats.TotalMessages != 42 {
+		t.Errorf("Stats.TotalMessages = %d, want 42", src.Stats.TotalMessages)
+	}
+	if !src.Saved {
+		t.Error("Saved should be true")
+	}
+}
+
 func TestTelegramErrorCode(t *testing.T) {
 	tests := []struct {
 		name string

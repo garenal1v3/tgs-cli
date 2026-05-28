@@ -60,6 +60,9 @@ func (s *Service) List(ctx context.Context, req ListRequest) (*ListResult, error
 		if total > totalAcc {
 			totalAcc = total
 		}
+		// Filter each page before accumulating so the limit check counts only
+		// matching items (fixes: --type bot --limit 2 returning empty results).
+		page = filterByType(page, req.Types)
 		all = append(all, page...)
 		if next == nil {
 			break
@@ -74,14 +77,12 @@ func (s *Service) List(ctx context.Context, req ListRequest) (*ListResult, error
 		all = all[:req.Limit]
 	}
 
-	filtered := filterByType(all, req.Types)
-
 	if req.WithStats {
-		s.enrichWithStats(ctx, filtered)
+		s.enrichWithStats(ctx, all)
 	}
 
-	sources := make([]Source, len(filtered))
-	for i, it := range filtered {
+	sources := make([]Source, len(all))
+	for i, it := range all {
 		sources[i] = it.Source
 	}
 	result := &ListResult{
@@ -214,6 +215,10 @@ func (s *Service) inspectKnownWithSubscription(ctx context.Context, src Source, 
 		return &src, nil
 	}
 	src.Stats = stats
+	// Stats succeeded: clear any earlier fetchFull error (e.g. InputPeerSelf
+	// type-assertion failure that is now fixed, or transient errors) since the
+	// peer is clearly accessible and we have valid data.
+	src.StatsError = ""
 	return &src, nil
 }
 
