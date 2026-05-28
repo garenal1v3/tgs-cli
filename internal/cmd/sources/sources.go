@@ -9,6 +9,6 @@ func NewSourcesCmd() *cobra.Command {
 		Short: "Inspect chats, channels, groups and users in the account",
 		Long:  "Enumerate Telegram dialogs available in the active profile and inspect specific peers.",
 	}
-	cmd.AddCommand(newListCmd(), newInspectCmd())
+	cmd.AddCommand(newListCmd(), newInspectCmd(), newFoldersCmd())
 	return cmd
 }
