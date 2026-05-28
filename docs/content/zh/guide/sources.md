@@ -172,7 +172,30 @@ done
 tgs sources list --archived
 ```
 
+## 文件夹
+
+Telegram 允许用户将对话分组到**文件夹**中，即官方客户端顶部的选项卡。`tgs sources folders` 可以枚举您的文件夹，并展开每个文件夹中包含的聊天，与 UI 显示保持一致：
+
+```bash
+tgs sources folders
+```
+
+默认的"全部聊天"视图不包含在输出中——只有用户自定义的文件夹和共享聊天列表才会出现。
+
+确定目标文件夹后，可将 `--folder` 传递给其他命令，将结果范围限定为该文件夹的内容。`--folder` 接受数字文件夹 ID 或不区分大小写的文件夹名称：
+
+```bash
+# 仅列出"Crypto"文件夹中的聊天
+tgs sources list --folder Crypto
+
+# 同上，使用数字 ID
+tgs sources list --folder 3
+```
+
+如需了解如何在搜索命令中使用 `--folder`，请参阅搜索指南中的[按文件夹筛选](#按文件夹筛选)部分。
+
 ## 完整参考
 
 - [tgs sources list]({{< relref "/reference/commands/sources/list" >}}) — 所有参数和输出字段
 - [tgs sources inspect]({{< relref "/reference/commands/sources/inspect" >}}) — 查看单个来源
+- [tgs sources folders]({{< relref "/reference/commands/sources/folders" >}}) — 列出文件夹及其内容

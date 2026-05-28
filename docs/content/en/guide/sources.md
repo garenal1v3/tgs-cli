@@ -170,7 +170,30 @@ Archived dialogs are hidden from the default list. Pass `--archived` to include 
 tgs sources list --archived
 ```
 
+## Folders
+
+Telegram lets you group dialogs into **folders** — the tabs you see at the top of the official mobile and desktop clients. `tgs sources folders` enumerates your folders and resolves the chats inside each one, mirroring exactly what the UI shows:
+
+```bash
+tgs sources folders
+```
+
+The default "All chats" view is not included — only user-defined folders and shared chatlists appear in the output.
+
+Once you know which folder you want to work with, pass `--folder` to scope other commands to that folder. `--folder` accepts either a numeric folder ID or a case-insensitive folder name:
+
+```bash
+# List only the chats that belong to a folder
+tgs sources list --folder Crypto
+
+# Same, by numeric folder ID
+tgs sources list --folder 3
+```
+
+See [Filtering by folder]({{< relref "/guide/search#filtering-by-folder" >}}) in the search guide for how to use `--folder` with search commands.
+
 ## Full Reference
 
 - [tgs sources list]({{< relref "/reference/commands/sources/list" >}}) — all flags and output fields
 - [tgs sources inspect]({{< relref "/reference/commands/sources/inspect" >}}) — inspect a single source
+- [tgs sources folders]({{< relref "/reference/commands/sources/folders" >}}) — list folders and their contents

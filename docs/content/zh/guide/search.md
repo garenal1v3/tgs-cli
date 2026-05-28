@@ -159,12 +159,12 @@ tgs search global "讨论" --groups-only
 tgs search global "你好" --users-only
 ```
 
-### 按文件夹筛选
+### 搜索已归档的聊天
 
-使用 `--folder` 限定在特定文件夹中搜索：
+使用 `--archived` 将全局搜索范围限定为 Telegram 内置归档文件夹中的聊天：
 
 ```bash
-tgs search global "查询" --folder 3
+tgs search global "旧消息" --archived
 ```
 
 全局搜索同样支持 `--filter`、`--after`、`--before` 参数。
@@ -219,6 +219,27 @@ tgs search calendar -c @channel --filter photo
 ```
 
 每个时段包含日期、消息数量以及该日期范围内的最小和最大消息 ID，便于后续精确定位。
+
+## 按文件夹筛选
+
+所有搜索子命令均支持 `--folder <id|名称>` 参数，可将搜索范围限定为用户自定义 Telegram 文件夹中的聊天。`--folder` 接受数字文件夹 ID 或不区分大小写的文件夹名称：
+
+```bash
+# 搜索"Work"文件夹中所有聊天的消息
+tgs search messages "发布说明" --folder Work
+
+# 统计"Crypto"文件夹中各聊天的媒体数量
+tgs search counters --folder Crypto
+
+# 限定在文件夹范围内的日历视图
+tgs search calendar --folder Crypto --filter photo
+```
+
+`tgs` 会将文件夹解析为其成员聊天列表，然后对每个聊天执行扇出 (fan-out) 查询，结果合并方式与多聊天搜索相同。
+
+> **关于 `tgs search global` 的说明：** 原先 `search global` 上的 `--folder` 参数（通过数字 ID 选择 Telegram 主文件夹或归档）已被 `--archived` 取代。`--folder` 参数现在在所有子命令中统一表示用户自定义文件夹。
+
+要查看您的文件夹及其 ID 或准确名称，请使用 `tgs sources folders`。
 
 ## 游标分页
 
