@@ -15,4 +15,5 @@ type API interface {
 	ChannelsGetFullChannel(ctx context.Context, ch tg.InputChannelClass) (*tg.MessagesChatFull, error)
 	MessagesGetFullChat(ctx context.Context, chatID int64) (*tg.MessagesChatFull, error)
 	UsersGetFullUser(ctx context.Context, u tg.InputUserClass) (*tg.UsersUserFull, error)
+	MessagesGetDialogFilters(ctx context.Context) (*tg.MessagesDialogFilters, error)
 }

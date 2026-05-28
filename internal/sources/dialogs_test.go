@@ -10,12 +10,13 @@ import (
 // mockAPI implements the sources.API interface, with the relevant methods set
 // per test. Unused methods panic.
 type mockAPI struct {
-	getDialogs     func(ctx context.Context, req *tg.MessagesGetDialogsRequest) (tg.MessagesDialogsClass, error)
-	search         func(ctx context.Context, req *tg.MessagesSearchRequest) (tg.MessagesMessagesClass, error)
-	getHistory     func(ctx context.Context, req *tg.MessagesGetHistoryRequest) (tg.MessagesMessagesClass, error)
-	getFullChannel func(ctx context.Context, ch tg.InputChannelClass) (*tg.MessagesChatFull, error)
-	getFullChat    func(ctx context.Context, chatID int64) (*tg.MessagesChatFull, error)
-	getFullUser    func(ctx context.Context, u tg.InputUserClass) (*tg.UsersUserFull, error)
+	getDialogs        func(ctx context.Context, req *tg.MessagesGetDialogsRequest) (tg.MessagesDialogsClass, error)
+	search            func(ctx context.Context, req *tg.MessagesSearchRequest) (tg.MessagesMessagesClass, error)
+	getHistory        func(ctx context.Context, req *tg.MessagesGetHistoryRequest) (tg.MessagesMessagesClass, error)
+	getFullChannel    func(ctx context.Context, ch tg.InputChannelClass) (*tg.MessagesChatFull, error)
+	getFullChat       func(ctx context.Context, chatID int64) (*tg.MessagesChatFull, error)
+	getFullUser       func(ctx context.Context, u tg.InputUserClass) (*tg.UsersUserFull, error)
+	getDialogFilters  func(ctx context.Context) (*tg.MessagesDialogFilters, error)
 }
 
 func (m *mockAPI) MessagesGetDialogs(ctx context.Context, req *tg.MessagesGetDialogsRequest) (tg.MessagesDialogsClass, error) {
@@ -35,6 +36,9 @@ func (m *mockAPI) MessagesGetFullChat(ctx context.Context, chatID int64) (*tg.Me
 }
 func (m *mockAPI) UsersGetFullUser(ctx context.Context, u tg.InputUserClass) (*tg.UsersUserFull, error) {
 	return m.getFullUser(ctx, u)
+}
+func (m *mockAPI) MessagesGetDialogFilters(ctx context.Context) (*tg.MessagesDialogFilters, error) {
+	return m.getDialogFilters(ctx)
 }
 
 func TestFetchDialogs_SinglePage(t *testing.T) {
