@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"sort"
 	"testing"
 
 	"github.com/gotd/td/tg"
@@ -179,11 +180,17 @@ func TestMatchFolder_ContactsFlag(t *testing.T) {
 		swp(1, "user", "Alice", func(w *sourceWithPeer) { w.IsContact = true }),
 		swp(2, "user", "Bob", func(w *sourceWithPeer) { w.IsContact = false }),
 		swp(3, "bot", "Botty"),
+		swp(4, "bot", "ContactBot", func(w *sourceWithPeer) { w.IsContact = true }),
 	}
 	filter := &tg.DialogFilter{ID: 1, Title: tg.TextWithEntities{Text: "Contacts"}, Contacts: true}
 	got := matchFolder(filter, dialogs, 0)
-	if len(got) != 1 || got[0].ID != 1 {
-		t.Errorf("got = %+v, want only Alice", got)
+	if len(got) != 2 {
+		t.Fatalf("len = %d, want 2 (Alice + ContactBot)", len(got))
+	}
+	gotIDs := []int64{got[0].ID, got[1].ID}
+	sort.Slice(gotIDs, func(i, j int) bool { return gotIDs[i] < gotIDs[j] })
+	if gotIDs[0] != 1 || gotIDs[1] != 4 {
+		t.Errorf("got IDs = %v, want [1, 4] (Alice + ContactBot)", gotIDs)
 	}
 }
 
@@ -212,6 +219,16 @@ func TestMatchFolder_GroupsBroadcastsBotsFlags(t *testing.T) {
 	got := matchFolder(filter, dialogs, 0)
 	if len(got) != 4 {
 		t.Fatalf("len = %d, want 4 (channel+sgroup+group+bot)", len(got))
+	}
+	wantIDs := map[int64]bool{-1000000000001: true, -1000000000002: true, -3: true, 5: true}
+	for _, s := range got {
+		if !wantIDs[s.ID] {
+			t.Errorf("unexpected ID %d in result", s.ID)
+		}
+		delete(wantIDs, s.ID)
+	}
+	if len(wantIDs) != 0 {
+		t.Errorf("missing IDs %v from result", wantIDs)
 	}
 }
 
