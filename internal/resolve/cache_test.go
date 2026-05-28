@@ -81,14 +81,14 @@ func TestPeerCache_StoreAndLoadSnapshot(t *testing.T) {
 		ResolvedAt:      time.Now().Unix(),
 		SnapshotVersion: 1,
 		Title:           "Durov's Channel",
-		Username:     "durov",
-		Access:       "public",
-		MembersCount: 1234567,
-		Verified:     true,
-		HasTopics:    false,
-		Gigagroup:    false,
-		Broadcast:    true,
-		Subscribed:   boolPtr(true),
+		Username:        "durov",
+		Access:          "public",
+		MembersCount:    1234567,
+		Verified:        true,
+		HasTopics:       false,
+		Gigagroup:       false,
+		Broadcast:       true,
+		Subscribed:      boolPtr(true),
 	}
 	if err := cache.Store("@durov", want); err != nil {
 		t.Fatalf("Store: %v", err)

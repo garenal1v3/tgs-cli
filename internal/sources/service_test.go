@@ -90,7 +90,7 @@ func TestService_List_WithStats_CacheHitAvoidsAPI(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 	s := New(api, nil, nil, cache, 0)
 
 	// First run: live (cold cache).
@@ -143,7 +143,7 @@ func TestService_List_WithStats_ActiveSourceSkipsCache(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 	s := New(api, nil, nil, cache, 0)
 
 	// Cold run.

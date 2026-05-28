@@ -350,15 +350,9 @@ func entryToPeer(e CacheEntry) tg.InputPeerClass {
 	}
 }
 
-// resolveID tries the cache first (by raw ID), falling back to idToPeer.
-func (r *Resolver) resolveID(id int64) tg.InputPeerClass {
-	peer, _ := r.resolveIDWithMeta(id)
-	return peer
-}
-
-// resolveIDWithMeta is like resolveID but also returns a ResolveMeta carrying
-// the cached snapshot/subscription (if any). For non-cached IDs the meta only
-// contains PeerType.
+// resolveIDWithMeta returns the InputPeer for a numeric ID plus a
+// ResolveMeta carrying the cached snapshot/subscription (if any). For
+// non-cached IDs the meta only contains PeerType.
 func (r *Resolver) resolveIDWithMeta(id int64) (tg.InputPeerClass, ResolveMeta) {
 	rawID := id
 	if id < -1000000000000 {

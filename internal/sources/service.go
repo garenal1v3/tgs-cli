@@ -13,7 +13,6 @@ import (
 	"github.com/searchtgcli/tgs/internal/retry"
 )
 
-
 // Service exposes high-level operations over Telegram source data.
 type Service struct {
 	api      API

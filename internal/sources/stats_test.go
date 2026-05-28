@@ -79,11 +79,11 @@ func TestFetchStats_Messages24hCountsViaHistory(t *testing.T) {
 				return &tg.MessagesChannelMessages{
 					Count: 1000,
 					Messages: []tg.MessageClass{
-						&tg.Message{ID: 100, Date: now - 60},      // fresh
-						&tg.Message{ID: 99, Date: now - 3600},     // fresh
-						&tg.Message{ID: 98, Date: now - 7200},     // fresh
-						&tg.Message{ID: 97, Date: now - 2*day},    // stale
-						&tg.Message{ID: 96, Date: now - 3*day},    // stale
+						&tg.Message{ID: 100, Date: now - 60},   // fresh
+						&tg.Message{ID: 99, Date: now - 3600},  // fresh
+						&tg.Message{ID: 98, Date: now - 7200},  // fresh
+						&tg.Message{ID: 97, Date: now - 2*day}, // stale
+						&tg.Message{ID: 96, Date: now - 3*day}, // stale
 					},
 				}, nil
 			}

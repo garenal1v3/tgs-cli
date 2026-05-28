@@ -12,4 +12,3 @@ func NewSourcesCmd() *cobra.Command {
 	cmd.AddCommand(newListCmd(), newInspectCmd())
 	return cmd
 }
-

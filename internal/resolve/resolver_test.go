@@ -10,7 +10,6 @@ import (
 	"github.com/gotd/td/tg"
 )
 
-
 // mockAPI implements the API interface for testing.
 type mockAPI struct {
 	resolveUsername func(ctx context.Context, req *tg.ContactsResolveUsernameRequest) (*tg.ContactsResolvedPeer, error)
@@ -200,7 +199,7 @@ func TestResolver_ResolveID_LegacyCacheKeepsAccessHash(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 	// Legacy entry — no SnapshotVersion, no snapshot fields, but has access_hash.
 	_ = cache.Store("id:1234567890", CacheEntry{
 		PeerType: "channel", ID: 1234567890, AccessHash: 999, ResolvedAt: time.Now().Unix(),
@@ -332,7 +331,7 @@ func TestResolver_ResolveWithMeta_CacheHitNoSubscribedInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 	_ = cache.Store("cached", CacheEntry{
 		PeerType: "channel", ID: 7, AccessHash: 11, ResolvedAt: time.Now().Unix(),
 		SnapshotVersion: 1,
@@ -403,7 +402,7 @@ func TestResolver_ResolveWithMeta_CacheHitReturnsSnapshot(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 	sub := true
 	_ = cache.Store("cached", CacheEntry{
 		PeerType: "channel", ID: 7, AccessHash: 11, ResolvedAt: time.Now().Unix(),
