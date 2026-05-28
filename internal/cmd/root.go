@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	searchcmd "github.com/searchtgcli/tgs/internal/cmd/search"
+	sourcescmd "github.com/searchtgcli/tgs/internal/cmd/sources"
 )
 
 var (
@@ -39,6 +40,7 @@ func NewRoot() *cobra.Command {
 	root.AddCommand(newProfileCmd())
 	root.AddCommand(newWhoamiCmd())
 	root.AddCommand(searchcmd.NewSearchCmd())
+	root.AddCommand(sourcescmd.NewSourcesCmd())
 
 	return root
 }

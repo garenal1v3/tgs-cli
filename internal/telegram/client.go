@@ -158,6 +158,13 @@ func CachePath(profileName string) string {
 	return filepath.Join(config.ProfileDir(profileName), "cache.db")
 }
 
+// StatsCachePath returns the path to the sources stats cache database for
+// the given profile. A separate file from CachePath because BoltDB only
+// permits one process to open a database file at a time.
+func StatsCachePath(profileName string) string {
+	return filepath.Join(config.ProfileDir(profileName), "stats_cache.db")
+}
+
 // Close releases the session database.
 func (c *Client) Close() error {
 	return c.session.Close()

@@ -68,7 +68,7 @@ func newInspectCmd() *cobra.Command {
 					defer func() { _ = pc.Close() }()
 					peerCache = pc
 
-					sc, err := sourcessvc.NewSourceStatsCache(telegram.CachePath(profileName))
+					sc, err := sourcessvc.NewSourceStatsCache(telegram.StatsCachePath(profileName))
 					if err != nil {
 						return fmt.Errorf("open stats cache: %w", err)
 					}
