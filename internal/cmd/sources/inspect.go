@@ -59,7 +59,6 @@ func newInspectCmd() *cobra.Command {
 				retryPolicy.MaxFloodWait = time.Duration(flagMaxWait) * time.Second
 
 				var peerCache *resolve.PeerCache
-				var statsCache *sourcessvc.SourceStatsCache
 				if !flagNoCache {
 					pc, err := resolve.NewPeerCache(telegram.CachePath(profileName))
 					if err != nil {
@@ -67,17 +66,10 @@ func newInspectCmd() *cobra.Command {
 					}
 					defer func() { _ = pc.Close() }()
 					peerCache = pc
-
-					sc, err := sourcessvc.NewSourceStatsCache(telegram.StatsCachePath(profileName))
-					if err != nil {
-						return fmt.Errorf("open stats cache: %w", err)
-					}
-					defer func() { _ = sc.Close() }()
-					statsCache = sc
 				}
 
 				resolver := resolve.NewResolver(api, peerCache)
-				svc := sourcessvc.New(api, resolver, retryPolicy, statsCache, selfID)
+				svc := sourcessvc.New(api, resolver, retryPolicy, nil, selfID)
 
 				src, err := svc.Inspect(ctx, sourcessvc.InspectRequest{
 					Ref:     ref,
