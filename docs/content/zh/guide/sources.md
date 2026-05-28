@@ -17,7 +17,7 @@ weight: 40
 tgs sources list
 ```
 
-响应为包含 `sources` 数组和 `total` 总数的 JSON 对象：
+响应为包含 `sources` 数组、`total` 总数和可选 `cursor` 的 JSON 对象：
 
 ```json
 {
@@ -34,9 +34,11 @@ tgs sources list
       "last_message": {"id": 4321, "date": "2026-05-28T08:15:00Z"}
     }
   ],
-  "total": 287,
-  "cursor": ""
+  "total": 287
 }
+```
+
+> **`total`** 是 Telegram 返回的对话总数，反映应用 `--type` 筛选**之前**的所有对话数量。请勿用 `total` 除以返回的 `sources` 数组长度来估算页数——请使用 `cursor` 进行分页。
 ```
 
 ## 按类型筛选
@@ -95,6 +97,8 @@ tgs sources inspect -
 
 响应中包含 `list` 中没有的额外字段：`subscribed`、`description`、`creation_date`、`invite_link`。
 
+> **数字 ID 的限制：** 数字 ID 仅在该 peer 已存在于您的对话列表或本地 peer 缓存中时才能解析。若要查看您未加入的频道，请使用 `@username` 或 `+电话号码`，而非数字 ID。
+
 ### 查看未订阅的频道
 
 只要知道 `@username`，您就可以在不加入的情况下查看任何公开频道：
@@ -126,7 +130,7 @@ tgs sources list --limit 50
 tgs sources list --limit 50 --cursor "eyJvIjo1MCwiZCI6MH0"
 ```
 
-当响应中的 `cursor` 字段为空字符串时，表示已到达最后一页。
+当没有更多页面时，JSON 中将**完全不包含 `cursor` 键**（而不是返回值为 `""` 的该键）。上述分页循环通过 `jq -r '.cursor? // empty'` 正确处理了这种情况。
 
 Shell 脚本中的典型分页循环：
 

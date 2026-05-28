@@ -15,7 +15,7 @@ The simplest invocation returns every dialog in your account:
 tgs sources list
 ```
 
-The response is a JSON object with a `sources` array and a `total` count:
+The response is a JSON object with a `sources` array, a `total` count, and an optional `cursor`:
 
 ```json
 {
@@ -32,9 +32,11 @@ The response is a JSON object with a `sources` array and a `total` count:
       "last_message": {"id": 4321, "date": "2026-05-28T08:15:00Z"}
     }
   ],
-  "total": 287,
-  "cursor": ""
+  "total": 287
 }
+```
+
+> **`total`** is the server-reported total dialog count as returned by Telegram — it reflects all dialogs **before** any `--type` filtering is applied. Do not divide `total` by the length of the returned `sources` array to estimate pages; use `cursor` for pagination instead.
 ```
 
 ## Filtering by type
@@ -93,6 +95,8 @@ tgs sources inspect -
 
 The response includes extra fields not available in `list`: `subscribed`, `description`, `creation_date`, and `invite_link`.
 
+> **Numeric ID limitation:** Numeric IDs only resolve if the peer is already in your dialogs or in the local peer cache. To inspect a channel you haven't joined, use `@username` or `+phone` — not a numeric ID.
+
 ### Inspecting a channel you're not subscribed to
 
 As long as you know the `@username`, you can inspect any public channel without joining it:
@@ -124,7 +128,7 @@ The response contains a `cursor` string. Pass it back to fetch the next page:
 tgs sources list --limit 50 --cursor "eyJvIjo1MCwiZCI6MH0"
 ```
 
-When the `cursor` field in the response is an empty string, you've reached the last page.
+When there are no more pages, the `cursor` key is **omitted from the JSON entirely** (it is not present with value `""`). The pagination loop above handles this correctly via `jq -r '.cursor? // empty'`.
 
 A typical pagination loop in a shell script:
 
