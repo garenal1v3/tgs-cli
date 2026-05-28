@@ -173,3 +173,139 @@ func TestMatchFolder_PeerNotInDialogsSilentlySkipped(t *testing.T) {
 		t.Errorf("got = %+v, want only -1000000000001", got)
 	}
 }
+
+func TestMatchFolder_ContactsFlag(t *testing.T) {
+	dialogs := []sourceWithPeer{
+		swp(1, "user", "Alice", func(w *sourceWithPeer) { w.IsContact = true }),
+		swp(2, "user", "Bob", func(w *sourceWithPeer) { w.IsContact = false }),
+		swp(3, "bot", "Botty"),
+	}
+	filter := &tg.DialogFilter{ID: 1, Title: tg.TextWithEntities{Text: "Contacts"}, Contacts: true}
+	got := matchFolder(filter, dialogs, 0)
+	if len(got) != 1 || got[0].ID != 1 {
+		t.Errorf("got = %+v, want only Alice", got)
+	}
+}
+
+func TestMatchFolder_NonContactsFlag(t *testing.T) {
+	dialogs := []sourceWithPeer{
+		swp(1, "user", "Alice", func(w *sourceWithPeer) { w.IsContact = true }),
+		swp(2, "user", "Bob"),
+		swp(3, "bot", "Botty"),
+	}
+	filter := &tg.DialogFilter{ID: 1, Title: tg.TextWithEntities{Text: "Non-contacts"}, NonContacts: true}
+	got := matchFolder(filter, dialogs, 0)
+	if len(got) != 1 || got[0].ID != 2 {
+		t.Errorf("got = %+v, want only Bob", got)
+	}
+}
+
+func TestMatchFolder_GroupsBroadcastsBotsFlags(t *testing.T) {
+	dialogs := []sourceWithPeer{
+		swp(-1000000000001, "channel", "Ch"),
+		swp(-1000000000002, "supergroup", "SGrp"),
+		swp(-3, "group", "LegacyGrp"),
+		swp(4, "user", "Alice"),
+		swp(5, "bot", "Botty"),
+	}
+	filter := &tg.DialogFilter{ID: 1, Title: tg.TextWithEntities{Text: "GBB"}, Groups: true, Broadcasts: true, Bots: true}
+	got := matchFolder(filter, dialogs, 0)
+	if len(got) != 4 {
+		t.Fatalf("len = %d, want 4 (channel+sgroup+group+bot)", len(got))
+	}
+}
+
+func TestMatchFolder_ExcludePeersBeatsAutoInclude(t *testing.T) {
+	dialogs := []sourceWithPeer{
+		swp(-1000000000001, "channel", "A"),
+		swp(-1000000000002, "channel", "B"),
+	}
+	filter := &tg.DialogFilter{
+		ID:           1,
+		Title:        tg.TextWithEntities{Text: "Channels"},
+		Broadcasts:   true,
+		ExcludePeers: []tg.InputPeerClass{&tg.InputPeerChannel{ChannelID: 2, AccessHash: 1}},
+	}
+	got := matchFolder(filter, dialogs, 0)
+	if len(got) != 1 || got[0].ID != -1000000000001 {
+		t.Errorf("got = %+v, want only A", got)
+	}
+}
+
+func TestMatchFolder_ExcludeMutedReadArchived(t *testing.T) {
+	dialogs := []sourceWithPeer{
+		swp(-1000000000001, "channel", "Active"),
+		swp(-1000000000002, "channel", "Muted", func(w *sourceWithPeer) { w.IsMuted = true }),
+		swp(-1000000000003, "channel", "Read", func(w *sourceWithPeer) { w.Source.UnreadCount = 0 }),
+		swp(-1000000000004, "channel", "Arch", func(w *sourceWithPeer) { w.Source.Archived = true }),
+	}
+	// Give the "Active" one unread so ExcludeRead doesn't eat it.
+	dialogs[0].Source.UnreadCount = 1
+	filter := &tg.DialogFilter{
+		ID:              1,
+		Title:           tg.TextWithEntities{Text: "Strict"},
+		Broadcasts:      true,
+		ExcludeMuted:    true,
+		ExcludeRead:     true,
+		ExcludeArchived: true,
+	}
+	got := matchFolder(filter, dialogs, 0)
+	if len(got) != 1 || got[0].ID != -1000000000001 {
+		t.Errorf("got = %+v, want only Active", got)
+	}
+}
+
+func TestMatchFolder_ChatlistIgnoresAutoFlags(t *testing.T) {
+	// A DialogFilterChatlist with include_peers — chatlists have no
+	// type-include flags, so dialogs not in include_peers must NOT appear.
+	dialogs := []sourceWithPeer{
+		swp(-1000000000001, "channel", "A"),
+		swp(-1000000000002, "channel", "B"),
+	}
+	filter := &tg.DialogFilterChatlist{
+		ID:    1,
+		Title: tg.TextWithEntities{Text: "Shared"},
+		IncludePeers: []tg.InputPeerClass{
+			&tg.InputPeerChannel{ChannelID: 1, AccessHash: 1},
+		},
+	}
+	got := matchFolder(filter, dialogs, 0)
+	if len(got) != 1 || got[0].ID != -1000000000001 {
+		t.Errorf("got = %+v, want only A (B must NOT auto-include)", got)
+	}
+}
+
+func TestMatchFolder_SortPinnedFirstThenByLastMsgDesc(t *testing.T) {
+	dialogs := []sourceWithPeer{
+		swp(-1000000000001, "channel", "Oldest", func(w *sourceWithPeer) {
+			w.Source.LastMessage = &LastMessage{ID: 1, Date: "2026-05-20T10:00:00Z"}
+		}),
+		swp(-1000000000002, "channel", "Newest", func(w *sourceWithPeer) {
+			w.Source.LastMessage = &LastMessage{ID: 2, Date: "2026-05-25T10:00:00Z"}
+		}),
+		swp(-1000000000003, "channel", "Pinned", func(w *sourceWithPeer) {
+			w.Source.LastMessage = &LastMessage{ID: 3, Date: "2026-05-15T10:00:00Z"}
+		}),
+	}
+	filter := &tg.DialogFilter{
+		ID:    1,
+		Title: tg.TextWithEntities{Text: "T"},
+		PinnedPeers: []tg.InputPeerClass{
+			&tg.InputPeerChannel{ChannelID: 3, AccessHash: 1},
+		},
+		Broadcasts: true,
+	}
+	got := matchFolder(filter, dialogs, 0)
+	if len(got) != 3 {
+		t.Fatalf("len = %d, want 3", len(got))
+	}
+	if got[0].ID != -1000000000003 {
+		t.Errorf("got[0].ID = %d, want -1000000000003 (Pinned)", got[0].ID)
+	}
+	if got[1].ID != -1000000000002 {
+		t.Errorf("got[1].ID = %d, want -1000000000002 (Newest)", got[1].ID)
+	}
+	if got[2].ID != -1000000000001 {
+		t.Errorf("got[2].ID = %d, want -1000000000001 (Oldest)", got[2].ID)
+	}
+}

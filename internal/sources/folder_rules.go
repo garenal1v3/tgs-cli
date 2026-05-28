@@ -1,6 +1,8 @@
 package sources
 
 import (
+	"sort"
+
 	"github.com/gotd/td/tg"
 )
 
@@ -19,7 +21,6 @@ func matchFolder(filter tg.DialogFilterClass, dialogs []sourceWithPeer, selfID i
 
 	pinned, include := folderPeers(filter)
 
-	// Step 1: pinned (in order).
 	for _, p := range pinned {
 		k, ok := keyFromInputPeer(p, selfID)
 		if !ok {
@@ -34,8 +35,8 @@ func matchFolder(filter tg.DialogFilterClass, dialogs []sourceWithPeer, selfID i
 		out = append(out, src)
 		seen[k] = true
 	}
+	pinnedCount := len(out)
 
-	// Step 2: include.
 	for _, p := range include {
 		k, ok := keyFromInputPeer(p, selfID)
 		if !ok {
@@ -46,16 +47,42 @@ func matchFolder(filter tg.DialogFilterClass, dialogs []sourceWithPeer, selfID i
 			continue
 		}
 		src := it.Source
-		// Don't override Source.Pinned from the dialog snapshot — leave it as
-		// it came; pinned-in-folder semantics only apply for the pinned_peers
-		// list. But the snapshot's pinned flag (pinned in main view) is
-		// unrelated to folder UI, so override to false here for consistency.
 		src.Pinned = false
 		out = append(out, src)
 		seen[k] = true
 	}
 
-	// Step 3: auto-flags — added in Task 5.
+	// Step 3: auto-flags — only for DialogFilter, not Chatlist.
+	if df, ok := filter.(*tg.DialogFilter); ok {
+		excludeSet := buildExcludeSet(df.ExcludePeers, selfID)
+		for i := range dialogs {
+			it := &dialogs[i]
+			k, ok := dialogKey(it)
+			if !ok || seen[k] || excludeSet[k] {
+				continue
+			}
+			if df.ExcludeMuted && it.IsMuted {
+				continue
+			}
+			if df.ExcludeRead && it.Source.UnreadCount == 0 {
+				continue
+			}
+			if df.ExcludeArchived && it.Source.Archived {
+				continue
+			}
+			if !matchTypeFlags(df, it) {
+				continue
+			}
+			src := it.Source
+			src.Pinned = false
+			out = append(out, src)
+			seen[k] = true
+		}
+	}
+
+	// Step 4: sort. Pinned stay in pinned_peers order (first pinnedCount
+	// entries); the rest sort by last_message.date descending (nil-date last).
+	sortByLastMessage(out[pinnedCount:])
 
 	return out
 }
@@ -121,4 +148,69 @@ func keyFromInputPeer(p tg.InputPeerClass, selfID int64) (peerKey, bool) {
 		return peerKey{peerKindUser, selfID}, true
 	}
 	return peerKey{}, false
+}
+
+// buildExcludeSet maps exclude_peers to peerKey for O(1) skip checks.
+func buildExcludeSet(peers []tg.InputPeerClass, selfID int64) map[peerKey]bool {
+	m := make(map[peerKey]bool, len(peers))
+	for _, p := range peers {
+		if k, ok := keyFromInputPeer(p, selfID); ok {
+			m[k] = true
+		}
+	}
+	return m
+}
+
+// dialogKey returns the peerKey for a dialog (built from its InputPeer).
+func dialogKey(it *sourceWithPeer) (peerKey, bool) {
+	switch p := it.Peer.(type) {
+	case *tg.InputPeerUser:
+		return peerKey{peerKindUser, p.UserID}, true
+	case *tg.InputPeerChat:
+		return peerKey{peerKindChat, p.ChatID}, true
+	case *tg.InputPeerChannel:
+		return peerKey{peerKindChannel, p.ChannelID}, true
+	}
+	return peerKey{}, false
+}
+
+// matchTypeFlags reports whether the dialog matches at least one include-by-
+// type flag on the filter. Bot/non-contact distinction: a bot user does NOT
+// count as non_contacts (per Telegram client behaviour).
+func matchTypeFlags(df *tg.DialogFilter, it *sourceWithPeer) bool {
+	t := it.Source.Type
+	if df.Contacts && (t == "user" || t == "bot") && it.IsContact {
+		return true
+	}
+	if df.NonContacts && t == "user" && !it.IsContact {
+		return true
+	}
+	if df.Groups && (t == "group" || t == "supergroup") {
+		return true
+	}
+	if df.Broadcasts && t == "channel" {
+		return true
+	}
+	if df.Bots && t == "bot" {
+		return true
+	}
+	return false
+}
+
+// sortByLastMessage sorts in place by LastMessage.Date desc; entries with nil
+// LastMessage go to the end. Stable so equal dates keep their original order.
+func sortByLastMessage(src []Source) {
+	sort.SliceStable(src, func(i, j int) bool {
+		a, b := src[i].LastMessage, src[j].LastMessage
+		switch {
+		case a == nil && b == nil:
+			return false
+		case a == nil:
+			return false
+		case b == nil:
+			return true
+		default:
+			return a.Date > b.Date // ISO-8601 strings sort lexicographically
+		}
+	})
 }
