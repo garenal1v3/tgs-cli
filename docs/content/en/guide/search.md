@@ -244,7 +244,7 @@ For transient network errors, tgs retries up to 3 times with exponential backoff
 
 ## Full Reference
 
-- [tgs search messages]({{< relref "/reference/commands/search-messages" >}}) -- search within specific chats
-- [tgs search global]({{< relref "/reference/commands/search-global" >}}) -- search across all chats
-- [tgs search counters]({{< relref "/reference/commands/search-counters" >}}) -- message count breakdown by type
-- [tgs search calendar]({{< relref "/reference/commands/search-calendar" >}}) -- search results grouped by date
+- [tgs search messages]({{< relref "/reference/commands/search/messages" >}}) -- search within specific chats
+- [tgs search global]({{< relref "/reference/commands/search/global" >}}) -- search across all chats
+- [tgs search counters]({{< relref "/reference/commands/search/counters" >}}) -- message count breakdown by type
+- [tgs search calendar]({{< relref "/reference/commands/search/calendar" >}}) -- search results grouped by date

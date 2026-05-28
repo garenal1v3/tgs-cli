@@ -71,4 +71,4 @@ tgs запросит код подтверждения, отправленный
 
 ## Полный справочник флагов
 
-Смотрите [tgs login]({{< relref "/reference/commands/login" >}}) и [tgs logout]({{< relref "/reference/commands/logout" >}}) для полного списка флагов.
+Смотрите [tgs login]({{< relref "/reference/commands/auth/login" >}}) и [tgs logout]({{< relref "/reference/commands/auth/logout" >}}) для полного списка флагов.

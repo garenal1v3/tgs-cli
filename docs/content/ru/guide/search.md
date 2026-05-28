@@ -284,7 +284,7 @@ tgs search messages "запрос" -c @channel --max-wait 10
 
 ## Полный справочник
 
-- [tgs search messages]({{< relref "/reference/commands/search-messages" >}}) -- поиск в конкретных чатах
-- [tgs search global]({{< relref "/reference/commands/search-global" >}}) -- глобальный поиск по всем чатам
-- [tgs search counters]({{< relref "/reference/commands/search-counters" >}}) -- счетчики сообщений по типам
-- [tgs search calendar]({{< relref "/reference/commands/search-calendar" >}}) -- результаты по дате
+- [tgs search messages]({{< relref "/reference/commands/search/messages" >}}) -- поиск в конкретных чатах
+- [tgs search global]({{< relref "/reference/commands/search/global" >}}) -- глобальный поиск по всем чатам
+- [tgs search counters]({{< relref "/reference/commands/search/counters" >}}) -- счетчики сообщений по типам
+- [tgs search calendar]({{< relref "/reference/commands/search/calendar" >}}) -- результаты по дате

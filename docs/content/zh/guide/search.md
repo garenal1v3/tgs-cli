@@ -287,7 +287,7 @@ tgs search messages "查询" -c @channel --max-wait 0
 
 ## 完整参考
 
-- [tgs search messages]({{< relref "/reference/commands/search-messages" >}}) — 聊天内搜索命令参考
-- [tgs search global]({{< relref "/reference/commands/search-global" >}}) — 全局搜索命令参考
-- [tgs search counters]({{< relref "/reference/commands/search-counters" >}}) — 计数命令参考
-- [tgs search calendar]({{< relref "/reference/commands/search-calendar" >}}) — 日历视图命令参考
+- [tgs search messages]({{< relref "/reference/commands/search/messages" >}}) — 聊天内搜索命令参考
+- [tgs search global]({{< relref "/reference/commands/search/global" >}}) — 全局搜索命令参考
+- [tgs search counters]({{< relref "/reference/commands/search/counters" >}}) — 计数命令参考
+- [tgs search calendar]({{< relref "/reference/commands/search/calendar" >}}) — 日历视图命令参考
