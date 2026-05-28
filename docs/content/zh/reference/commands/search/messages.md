@@ -21,7 +21,8 @@ tgs search messages [query] [flags]
 
 | 参数 | 缩写 | 类型 | 默认值 | 说明 |
 |------|------|------|--------|------|
-| `--chat` | `-c` | string[] | | 要搜索的聊天（用户名、电话、ID；可重复使用，支持逗号分隔）。**必填。** |
+| `--chat` | `-c` | string[] | | 要搜索的聊天（用户名、电话、ID；可重复使用，支持逗号分隔）。未设置 `--folder` 时必填。 |
+| `--folder` | | string | `""` | 搜索此文件夹内的所有聊天（id 或名称）；文件夹中的对等体与 `--chat` 累加 |
 | `--from` | `-f` | string | | 按发送者筛选（用户名、电话或 ID） |
 | `--filter` | | string | | 消息类型过滤器（参见[过滤器值](#过滤器值)） |
 | `--after` | | string | | 仅返回此日期之后的消息（YYYY-MM-DD 或 unix 时间戳） |
@@ -64,6 +65,12 @@ tgs search messages "config" -c @mygroup --from @alice --filter document
 
 ```bash
 tgs search messages "outage" -c @incidents --after 2025-01-01 --before 2025-06-01
+```
+
+搜索文件夹内所有聊天：
+
+```bash
+tgs search messages "announcement" --folder Work
 ```
 
 分页浏览结果：

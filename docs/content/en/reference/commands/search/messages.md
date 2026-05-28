@@ -19,7 +19,8 @@ The `query` argument is required and specifies the text to search for.
 
 | Flag | Short | Type | Default | Description |
 |------|-------|------|---------|-------------|
-| `--chat` | `-c` | string[] | | Chat to search (username, phone, ID; repeatable, comma-separated). **Required.** |
+| `--chat` | `-c` | string[] | | Chat to search (username, phone, ID; repeatable, comma-separated). Required unless `--folder` is set. |
+| `--folder` | | string | `""` | Search all chats inside this folder (id or name); peers are additive to any `--chat` values |
 | `--from` | `-f` | string | | Filter by sender (username, phone, or ID) |
 | `--filter` | | string | | Message type filter (see [filter values](#filter-values)) |
 | `--after` | | string | | Only messages after date (YYYY-MM-DD or unix timestamp) |
@@ -62,6 +63,12 @@ Search within a date range:
 
 ```bash
 tgs search messages "outage" -c @incidents --after 2025-01-01 --before 2025-06-01
+```
+
+Search across all chats in a folder:
+
+```bash
+tgs search messages "announcement" --folder Work
 ```
 
 Paginate through results:

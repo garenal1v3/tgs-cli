@@ -11,6 +11,9 @@ tgs sources list --with-stats
 # Include archived dialogs
 tgs sources list --archived
 
+# List only chats inside the "Crypto" folder
+tgs sources list --folder Crypto
+
 # Paginate through a large account (first page)
 tgs sources list --limit 50
 

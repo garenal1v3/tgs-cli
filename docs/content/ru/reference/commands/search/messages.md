@@ -21,7 +21,8 @@ tgs search messages [query] [flags]
 
 | Флаг | Сокр. | Тип | По умолчанию | Описание |
 |------|-------|-----|--------------|----------|
-| `--chat` | `-c` | string[] | | Чат для поиска (username, телефон, ID; можно указывать несколько раз или через запятую). **Обязательный.** |
+| `--chat` | `-c` | string[] | | Чат для поиска (username, телефон, ID; можно указывать несколько раз или через запятую). Обязателен, если не задан `--folder`. |
+| `--folder` | | string | `""` | Искать во всех чатах этой папки (id или имя); пиры папки суммируются с `--chat` |
 | `--from` | `-f` | string | | Фильтр по отправителю (username, телефон или ID) |
 | `--filter` | | string | | Фильтр по типу сообщения (см. [допустимые значения](#допустимые-значения-фильтров)) |
 | `--after` | | string | | Только сообщения после даты (YYYY-MM-DD или unix timestamp) |
@@ -64,6 +65,12 @@ tgs search messages "config" -c @mygroup --from @alice --filter document
 
 ```bash
 tgs search messages "outage" -c @incidents --after 2025-01-01 --before 2025-06-01
+```
+
+Поиск по всем чатам в папке:
+
+```bash
+tgs search messages "announcement" --folder Work
 ```
 
 Пагинация результатов:

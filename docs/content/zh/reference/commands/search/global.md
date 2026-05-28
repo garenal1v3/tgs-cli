@@ -21,10 +21,11 @@ tgs search global [query] [flags]
 
 | 参数 | 缩写 | 类型 | 默认值 | 说明 |
 |------|------|------|--------|------|
-| `--channels-only` | | bool | `false` | 仅在频道中搜索 |
-| `--groups-only` | | bool | `false` | 仅在群组中搜索 |
-| `--users-only` | | bool | `false` | 仅在私聊中搜索 |
-| `--folder` | | int | `0` | 仅在指定 ID 的文件夹中搜索 |
+| `--channels-only` | | bool | `false` | 仅在频道中搜索；与 `--folder` 不兼容 |
+| `--groups-only` | | bool | `false` | 仅在群组中搜索；与 `--folder` 不兼容 |
+| `--users-only` | | bool | `false` | 仅在私聊中搜索；与 `--folder` 不兼容 |
+| `--archived` | | bool | `false` | 在归档中搜索（文件夹 ID 1） |
+| `--folder` | | string | `""` | 仅在此文件夹中搜索（id 或名称）；与 `--channels-only`、`--groups-only`、`--users-only` 不兼容 |
 | `--filter` | | string | | 消息类型过滤器（参见[过滤器值](/zh/reference/commands/search/messages/#过滤器值)） |
 | `--after` | | string | | 仅返回此日期之后的消息（YYYY-MM-DD 或 unix 时间戳） |
 | `--before` | | string | | 仅返回此日期之前的消息（YYYY-MM-DD 或 unix 时间戳） |
@@ -55,11 +56,25 @@ tgs search global "breaking news" --channels-only
 tgs search global "quarterly report" --after 2025-04-01 -l 20
 ```
 
-仅在指定文件夹中搜索：
+在归档中搜索：
 
 ```bash
-tgs search global "project update" --folder 3
+tgs search global "old project" --archived
 ```
+
+在指定文件夹中搜索：
+
+```bash
+tgs search global "project update" --folder Work
+```
+
+## 说明
+
+使用 `--folder` 时，`tgs` 会解析文件夹的聊天列表并执行扇出（fan-out）——
+对每个聊天发送一个 `searchGlobal` 请求，然后合并结果。这是因为 Telegram
+的 `searchGlobal` API 不直接接受对等体列表。
+
+`--folder` 不能与 `--channels-only`、`--groups-only` 或 `--users-only` 同时使用。
 
 ## 输出
 

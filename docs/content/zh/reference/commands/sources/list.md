@@ -23,6 +23,7 @@ tgs sources list [flags]
 | `--with-stats` | | bool | `false` | 为每个来源获取扩展统计信息（总消息数/24h/首条消息 + 完整信息） |
 | `--limit` | `-l` | int | `0` | 最大返回记录数（1-500，0=全部） |
 | `--cursor` | | string | | 上次响应中的分页游标 |
+| `--folder` | | string | `""` | 仅返回此文件夹内的聊天（id 或名称）；与 `--cursor` 不兼容 |
 | `--archived` | | bool | `false` | 包含已归档的对话 |
 | `--max-wait` | | int | `60` | FLOOD_WAIT 最大等待秒数 |
 | `--no-cache` | | bool | `false` | 禁用对等体和统计缓存 |
@@ -54,6 +55,12 @@ tgs sources list --with-stats
 
 ```bash
 tgs sources list --archived
+```
+
+仅列出"Crypto"文件夹中的聊天：
+
+```bash
+tgs sources list --folder Crypto
 ```
 
 分页遍历大型账户：
