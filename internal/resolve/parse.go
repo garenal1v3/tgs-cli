@@ -51,6 +51,17 @@ func ParseInput(input string) (PeerInput, error) {
 		return pi, nil
 	}
 
+	// Explicit ID form `id:<n>`: cobra/pflag treats bare "-1001234567890" as
+	// a flag, so this is the CLI-friendly way to pass a numeric peer ID
+	// without needing the `--` separator.
+	if rest, ok := strings.CutPrefix(input, "id:"); ok {
+		id, err := strconv.ParseInt(rest, 10, 64)
+		if err != nil {
+			return PeerInput{}, fmt.Errorf("invalid id:<n> form: %q (want a base-10 integer)", input)
+		}
+		return PeerInput{Type: InputID, ID: id}, nil
+	}
+
 	// Phone: starts with +, followed by 7+ digits, no slash in string.
 	if strings.HasPrefix(input, "+") && !strings.Contains(input, "/") {
 		digits := input[1:]
@@ -69,7 +80,37 @@ func ParseInput(input string) (PeerInput, error) {
 	if username == "" {
 		return PeerInput{}, fmt.Errorf("invalid input: %q", input)
 	}
+	if !isValidUsername(username) {
+		return PeerInput{}, fmt.Errorf("invalid username form: %q (Telegram usernames may contain only letters, digits and underscores, and must start with a letter)", input)
+	}
 	return PeerInput{Type: InputUsername, Value: username}, nil
+}
+
+// isValidUsername mirrors Telegram's username rules just well enough to
+// reject obviously broken inputs (@@@, @!hi, @1abc) up front instead of
+// letting Telegram return a confusing USERNAME_INVALID code. We intentionally
+// do not enforce the 5-character minimum: short legacy usernames exist (and
+// the Bot API still accepts them), so leave that boundary to the server.
+func isValidUsername(s string) bool {
+	if len(s) == 0 || len(s) > 32 {
+		return false
+	}
+	for i, r := range s {
+		switch {
+		case r >= 'a' && r <= 'z':
+		case r >= 'A' && r <= 'Z':
+		case r >= '0' && r <= '9':
+		case r == '_':
+		default:
+			return false
+		}
+		if i == 0 && (r >= '0' && r <= '9') {
+			// First char must be a letter or underscore; digits aren't
+			// legal as the first character.
+			return false
+		}
+	}
+	return true
 }
 
 // parseTelegramLink attempts to extract a peer reference from t.me or telegram.me URLs.

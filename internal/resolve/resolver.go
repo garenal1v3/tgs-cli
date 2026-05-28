@@ -28,23 +28,244 @@ func NewResolver(api API, cache *PeerCache) *Resolver {
 
 // Resolve parses a single input string and returns the corresponding InputPeerClass.
 func (r *Resolver) Resolve(ctx context.Context, input string) (tg.InputPeerClass, error) {
+	peer, _, err := r.ResolveWithMeta(ctx, input)
+	return peer, err
+}
+
+// ResolveMeta carries additional information about the resolved peer that
+// some callers need but is not part of the InputPeer itself.
+type ResolveMeta struct {
+	PeerType string // "user" | "chat" | "channel"
+
+	// Subscribed indicates whether the authenticated user is a member of the
+	// resolved peer. Only set (non-nil) for channels — either resolved live
+	// via contacts.resolveUsername, or restored from cache when the snapshot
+	// recorded a subscription state.
+	Subscribed *bool
+
+	// Snapshot carries the display fields (title, username, members count,
+	// flags) captured at resolve time. Populated both from live API responses
+	// and from peer-cache snapshots. nil for ID-based resolves with cache miss
+	// and for invite-link resolves.
+	Snapshot *PeerSnapshot
+}
+
+// PeerSnapshot is a minimal display-friendly view of a Telegram peer captured
+// at resolve time. Mirrors the cache snapshot fields in CacheEntry.
+type PeerSnapshot struct {
+	Title        string
+	Username     string
+	Access       string // "public" | "private"
+	MembersCount int
+	Verified     bool
+	Scam         bool
+	Fake         bool
+	Restricted   bool
+	HasTopics    bool
+	Gigagroup    bool
+	Broadcast    bool // channel (true) vs supergroup (false); only meaningful for channels
+	FirstName    string
+	LastName     string
+	Phone        string
+	IsBot        bool
+	Deleted      bool
+}
+
+// ResolveWithMeta is like Resolve but also returns peer-level metadata
+// extracted from the Telegram response (e.g. whether we're subscribed to a
+// resolved channel).
+func (r *Resolver) ResolveWithMeta(ctx context.Context, input string) (tg.InputPeerClass, ResolveMeta, error) {
 	pi, err := ParseInput(input)
 	if err != nil {
-		return nil, fmt.Errorf("parse input %q: %w", input, err)
+		return nil, ResolveMeta{}, fmt.Errorf("parse input %q: %w", input, err)
 	}
-
 	switch pi.Type {
 	case InputUsername:
-		return r.resolveUsername(ctx, pi.Value)
+		return r.resolveUsernameWithMeta(ctx, pi.Value)
 	case InputPhone:
-		return r.resolvePhone(ctx, pi.Value)
+		peer, err := r.resolvePhone(ctx, pi.Value)
+		if err != nil {
+			return nil, ResolveMeta{}, err
+		}
+		return peer, ResolveMeta{PeerType: peerTypeOf(peer)}, nil
 	case InputID:
-		return r.resolveID(pi.ID), nil
+		peer, meta := r.resolveIDWithMeta(pi.ID)
+		return peer, meta, nil
 	case InputInvite:
-		return nil, fmt.Errorf("invite links are not supported for search")
+		return nil, ResolveMeta{}, fmt.Errorf("invite links are not supported for search")
 	default:
-		return nil, fmt.Errorf("unknown input type: %d", pi.Type)
+		return nil, ResolveMeta{}, fmt.Errorf("unknown input type: %d", pi.Type)
 	}
+}
+
+// resolveUsernameWithMeta mirrors resolveUsername but also returns ResolveMeta
+// (including Channel.Left -> Subscribed and a PeerSnapshot) when the
+// resolution is live. On a cache hit the snapshot and subscription state are
+// restored from the cached entry.
+func (r *Resolver) resolveUsernameWithMeta(ctx context.Context, username string) (tg.InputPeerClass, ResolveMeta, error) {
+	if r.cache != nil {
+		entry, found, err := r.cache.Load(username)
+		if err != nil {
+			return nil, ResolveMeta{}, fmt.Errorf("cache load %q: %w", username, err)
+		}
+		// SnapshotVersion < 1 means the entry was cached before snapshot
+		// support existed — refresh it via a live resolve so inspect callers
+		// get title/username/access/etc.
+		if found && entry.SnapshotVersion >= 1 {
+			return entryToPeer(entry), metaFromEntry(entry), nil
+		}
+	}
+
+	res, err := r.api.ContactsResolveUsername(ctx, &tg.ContactsResolveUsernameRequest{
+		Username: username,
+	})
+	if err != nil {
+		return nil, ResolveMeta{}, fmt.Errorf("resolve username %q: %w", username, err)
+	}
+
+	peer, entry, err := resolvedToPeer(res)
+	if err != nil {
+		return nil, ResolveMeta{}, err
+	}
+
+	// Capture snapshot + subscription state from the live response into the
+	// cache entry (so a later cache hit can recreate the same meta).
+	populateEntrySnapshot(&entry, res)
+	entry.SnapshotVersion = 1
+
+	meta := metaFromEntry(entry)
+
+	if r.cache != nil {
+		if storeErr := r.cache.Store(username, entry); storeErr != nil {
+			return nil, ResolveMeta{}, fmt.Errorf("cache store %q: %w", username, storeErr)
+		}
+	}
+
+	return peer, meta, nil
+}
+
+// metaFromEntry builds a ResolveMeta from a CacheEntry. The entry already
+// carries either freshly-captured (live) or previously-cached snapshot fields.
+func metaFromEntry(entry CacheEntry) ResolveMeta {
+	meta := ResolveMeta{PeerType: entry.PeerType, Subscribed: entry.Subscribed}
+	if entry.Title != "" || entry.Username != "" || entry.FirstName != "" || entry.MembersCount != 0 ||
+		entry.Verified || entry.Scam || entry.Fake || entry.Restricted ||
+		entry.HasTopics || entry.Gigagroup || entry.Broadcast || entry.IsBot || entry.Deleted ||
+		entry.Access != "" || entry.LastName != "" || entry.Phone != "" {
+		meta.Snapshot = &PeerSnapshot{
+			Title:        entry.Title,
+			Username:     entry.Username,
+			Access:       entry.Access,
+			MembersCount: entry.MembersCount,
+			Verified:     entry.Verified,
+			Scam:         entry.Scam,
+			Fake:         entry.Fake,
+			Restricted:   entry.Restricted,
+			HasTopics:    entry.HasTopics,
+			Gigagroup:    entry.Gigagroup,
+			Broadcast:    entry.Broadcast,
+			FirstName:    entry.FirstName,
+			LastName:     entry.LastName,
+			Phone:        entry.Phone,
+			IsBot:        entry.IsBot,
+			Deleted:      entry.Deleted,
+		}
+	}
+	return meta
+}
+
+// populateEntrySnapshot fills snapshot/subscription fields on a freshly-built
+// CacheEntry from the matching object in a ContactsResolvedPeer.
+func populateEntrySnapshot(entry *CacheEntry, res *tg.ContactsResolvedPeer) {
+	switch entry.PeerType {
+	case "channel":
+		for _, c := range res.Chats {
+			ch, ok := c.(*tg.Channel)
+			if !ok || ch.GetID() != entry.ID {
+				continue
+			}
+			entry.Title = ch.Title
+			legacy, _ := ch.GetUsername()
+			extra, _ := ch.GetUsernames()
+			if un := activeUsername(legacy, extra); un != "" {
+				entry.Username = un
+				entry.Access = "public"
+			} else {
+				entry.Access = "private"
+			}
+			if mc, ok := ch.GetParticipantsCount(); ok {
+				entry.MembersCount = mc
+			}
+			entry.Verified = ch.Verified
+			entry.Scam = ch.Scam
+			entry.Fake = ch.Fake
+			entry.Restricted = ch.Restricted
+			entry.HasTopics = ch.Forum
+			entry.Gigagroup = ch.Gigagroup
+			entry.Broadcast = ch.Broadcast
+			sub := !ch.Left
+			entry.Subscribed = &sub
+			return
+		}
+	case "user":
+		for _, u := range res.Users {
+			user, ok := u.(*tg.User)
+			if !ok || user.GetID() != entry.ID {
+				continue
+			}
+			if fn, ok := user.GetFirstName(); ok {
+				entry.FirstName = fn
+			}
+			if ln, ok := user.GetLastName(); ok {
+				entry.LastName = ln
+			}
+			legacy, _ := user.GetUsername()
+			extra, _ := user.GetUsernames()
+			if un := activeUsername(legacy, extra); un != "" {
+				entry.Username = un
+			}
+			if ph, ok := user.GetPhone(); ok {
+				entry.Phone = ph
+			}
+			entry.IsBot = user.Bot
+			entry.Verified = user.Verified
+			entry.Scam = user.Scam
+			entry.Fake = user.Fake
+			entry.Restricted = user.Restricted
+			entry.Deleted = user.Deleted
+			return
+		}
+	}
+}
+
+// activeUsername returns the user-visible handle for a peer. Prefers the
+// legacy single Username field; if empty, falls back to the first Active
+// entry in the collectible-usernames list (tg.Username with Active=true) —
+// required for peers like @durov or @money whose primary handle has been
+// migrated to that array and whose legacy Username field is empty.
+func activeUsername(legacy string, list []tg.Username) string {
+	if legacy != "" {
+		return legacy
+	}
+	for _, u := range list {
+		if u.Active && u.Username != "" {
+			return u.Username
+		}
+	}
+	return ""
+}
+
+// peerTypeOf returns the string label for an InputPeerClass.
+func peerTypeOf(peer tg.InputPeerClass) string {
+	switch peer.(type) {
+	case *tg.InputPeerUser:
+		return "user"
+	case *tg.InputPeerChat:
+		return "chat"
+	case *tg.InputPeerChannel:
+		return "channel"
+	}
+	return ""
 }
 
 // ResolveMulti resolves multiple inputs sequentially, returning a slice of peers
@@ -59,41 +280,6 @@ func (r *Resolver) ResolveMulti(ctx context.Context, inputs []string) ([]tg.Inpu
 		peers = append(peers, peer)
 	}
 	return peers, nil
-}
-
-// resolveUsername resolves a username via cache (if available) or the Telegram API.
-func (r *Resolver) resolveUsername(ctx context.Context, username string) (tg.InputPeerClass, error) {
-	// Check cache first.
-	if r.cache != nil {
-		entry, found, err := r.cache.Load(username)
-		if err != nil {
-			return nil, fmt.Errorf("cache load %q: %w", username, err)
-		}
-		if found {
-			return entryToPeer(entry), nil
-		}
-	}
-
-	res, err := r.api.ContactsResolveUsername(ctx, &tg.ContactsResolveUsernameRequest{
-		Username: username,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("resolve username %q: %w", username, err)
-	}
-
-	peer, entry, err := resolvedToPeer(res)
-	if err != nil {
-		return nil, err
-	}
-
-	// Store in cache.
-	if r.cache != nil {
-		if storeErr := r.cache.Store(username, entry); storeErr != nil {
-			return nil, fmt.Errorf("cache store %q: %w", username, storeErr)
-		}
-	}
-
-	return peer, nil
 }
 
 // resolvePhone resolves a phone number via the Telegram API.
@@ -185,8 +371,10 @@ func entryToPeer(e CacheEntry) tg.InputPeerClass {
 	}
 }
 
-// resolveID tries the cache first (by raw ID), falling back to idToPeer.
-func (r *Resolver) resolveID(id int64) tg.InputPeerClass {
+// resolveIDWithMeta returns the InputPeer for a numeric ID plus a
+// ResolveMeta carrying the cached snapshot/subscription (if any). For
+// non-cached IDs the meta only contains PeerType.
+func (r *Resolver) resolveIDWithMeta(id int64) (tg.InputPeerClass, ResolveMeta) {
 	rawID := id
 	if id < -1000000000000 {
 		rawID = -id - 1000000000000
@@ -196,12 +384,18 @@ func (r *Resolver) resolveID(id int64) tg.InputPeerClass {
 
 	if r.cache != nil {
 		key := fmt.Sprintf("id:%d", rawID)
-		entry, found, err := r.cache.Load(key)
-		if err == nil && found {
-			return entryToPeer(entry)
+		if entry, found, err := r.cache.Load(key); err == nil && found {
+			if entry.SnapshotVersion >= 1 {
+				return entryToPeer(entry), metaFromEntry(entry)
+			}
+			// Legacy entry (pre-snapshot): the snapshot fields are absent
+			// but the access_hash is still valid — use it so search-style
+			// callers don't get a peer with AccessHash=0.
+			return entryToPeer(entry), ResolveMeta{PeerType: entry.PeerType}
 		}
 	}
-	return idToPeer(id)
+	peer := idToPeer(id)
+	return peer, ResolveMeta{PeerType: peerTypeOf(peer)}
 }
 
 // idToPeer constructs an InputPeerClass from a numeric ID without cache.

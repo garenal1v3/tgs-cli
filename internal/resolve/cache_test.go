@@ -65,6 +65,54 @@ func TestPeerCache_LoadMissing(t *testing.T) {
 	}
 }
 
+func TestPeerCache_StoreAndLoadSnapshot(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "test.db")
+
+	cache, err := NewPeerCache(dbPath)
+	if err != nil {
+		t.Fatalf("NewPeerCache: %v", err)
+	}
+	defer func() { _ = cache.Close() }()
+
+	want := CacheEntry{
+		PeerType:        "channel",
+		ID:              42,
+		AccessHash:      1,
+		ResolvedAt:      time.Now().Unix(),
+		SnapshotVersion: 1,
+		Title:           "Durov's Channel",
+		Username:        "durov",
+		Access:          "public",
+		MembersCount:    1234567,
+		Verified:        true,
+		HasTopics:       false,
+		Gigagroup:       false,
+		Broadcast:       true,
+		Subscribed:      boolPtr(true),
+	}
+	if err := cache.Store("@durov", want); err != nil {
+		t.Fatalf("Store: %v", err)
+	}
+	got, found, err := cache.Load("@durov")
+	if err != nil || !found {
+		t.Fatalf("Load: err=%v found=%v", err, found)
+	}
+	if got.Title != "Durov's Channel" || got.Username != "durov" || got.Access != "public" {
+		t.Errorf("snapshot strings lost: %+v", got)
+	}
+	if got.MembersCount != 1234567 {
+		t.Errorf("MembersCount = %d, want 1234567", got.MembersCount)
+	}
+	if !got.Verified || !got.Broadcast {
+		t.Errorf("bool fields lost: verified=%v broadcast=%v", got.Verified, got.Broadcast)
+	}
+	if got.Subscribed == nil || !*got.Subscribed {
+		t.Errorf("Subscribed = %v, want *true", got.Subscribed)
+	}
+}
+
+func boolPtr(v bool) *bool { return &v }
+
 func TestPeerCache_TTLExpired(t *testing.T) {
 	dbPath := filepath.Join(t.TempDir(), "test.db")
 

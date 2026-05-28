@@ -15,6 +15,7 @@
 ## Features
 
 - Search messages, chats, channels — everything Telegram API exposes
+- Enumerate and inspect all your dialogs with `tgs sources`
 - Works through your real Telegram account, not a bot
 - JSON output by default — built for scripts and AI agents
 - Multiple account profiles, like AWS CLI

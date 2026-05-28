@@ -71,12 +71,9 @@ func newMessagesCmd() *cobra.Command {
 			}
 			profileName := profile.Resolve(flagProfile, cwd)
 
-			client, err := telegram.Open(profileName)
+			client, err := telegram.OpenOrError(profileName)
 			if err != nil {
-				return fmt.Errorf("open session: %w", err)
-			}
-			if client == nil {
-				return fmt.Errorf("run tgs login first")
+				return err
 			}
 			defer func() { _ = client.Close() }()
 
