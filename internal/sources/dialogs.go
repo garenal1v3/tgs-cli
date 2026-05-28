@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/gotd/td/tg"
+
+	"github.com/searchtgcli/tgs/internal/retry"
 )
 
 // sourceWithPeer pairs a Source with the InputPeerClass needed to re-call
@@ -36,7 +38,10 @@ func (s *Service) fetchDialogs(ctx context.Context, cur *Cursor, limit int, arch
 		req.OffsetPeer = cursorToInputPeer(cur)
 	}
 
-	res, err := s.api.MessagesGetDialogs(ctx, req)
+	res, err := retry.Do(ctx, s.retry, func() (tg.MessagesDialogsClass, error) {
+		r, err := s.api.MessagesGetDialogs(ctx, req)
+		return r, retry.ClassifyError(err)
+	})
 	if err != nil {
 		return nil, nil, 0, fmt.Errorf("messages.getDialogs: %w", err)
 	}

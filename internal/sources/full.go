@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/gotd/td/tg"
+
+	"github.com/searchtgcli/tgs/internal/retry"
 )
 
 // fetchFull pulls per-source "full" info (members count, description, linked
@@ -22,9 +24,12 @@ func (s *Service) fetchFull(ctx context.Context, src Source, peer tg.InputPeerCl
 		if !ok {
 			return nil, fmt.Errorf("channel source needs InputPeerChannel, got %T", peer)
 		}
-		res, err := s.api.ChannelsGetFullChannel(ctx, &tg.InputChannel{
-			ChannelID:  ch.ChannelID,
-			AccessHash: ch.AccessHash,
+		res, err := retry.Do(ctx, s.retry, func() (*tg.MessagesChatFull, error) {
+			r, err := s.api.ChannelsGetFullChannel(ctx, &tg.InputChannel{
+				ChannelID:  ch.ChannelID,
+				AccessHash: ch.AccessHash,
+			})
+			return r, retry.ClassifyError(err)
 		})
 		if err != nil {
 			return nil, fmt.Errorf("channels.getFullChannel: %w", err)
@@ -53,7 +58,10 @@ func (s *Service) fetchFull(ctx context.Context, src Source, peer tg.InputPeerCl
 		if !ok {
 			return nil, fmt.Errorf("group source needs InputPeerChat, got %T", peer)
 		}
-		res, err := s.api.MessagesGetFullChat(ctx, chatPeer.ChatID)
+		res, err := retry.Do(ctx, s.retry, func() (*tg.MessagesChatFull, error) {
+			r, err := s.api.MessagesGetFullChat(ctx, chatPeer.ChatID)
+			return r, retry.ClassifyError(err)
+		})
 		if err != nil {
 			return nil, fmt.Errorf("messages.getFullChat: %w", err)
 		}
@@ -74,9 +82,12 @@ func (s *Service) fetchFull(ctx context.Context, src Source, peer tg.InputPeerCl
 		if !ok {
 			return nil, fmt.Errorf("user source needs InputPeerUser, got %T", peer)
 		}
-		res, err := s.api.UsersGetFullUser(ctx, &tg.InputUser{
-			UserID:     userPeer.UserID,
-			AccessHash: userPeer.AccessHash,
+		res, err := retry.Do(ctx, s.retry, func() (*tg.UsersUserFull, error) {
+			r, err := s.api.UsersGetFullUser(ctx, &tg.InputUser{
+				UserID:     userPeer.UserID,
+				AccessHash: userPeer.AccessHash,
+			})
+			return r, retry.ClassifyError(err)
 		})
 		if err != nil {
 			return nil, fmt.Errorf("users.getFullUser: %w", err)

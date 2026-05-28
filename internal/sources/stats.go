@@ -6,16 +6,21 @@ import (
 	"time"
 
 	"github.com/gotd/td/tg"
+
+	"github.com/searchtgcli/tgs/internal/retry"
 )
 
 // fetchStats performs three Telegram calls to compute total/24h/first metrics
 // for a single peer. Calls are sequential to minimise FLOOD_WAIT risk.
 func (s *Service) fetchStats(ctx context.Context, peer tg.InputPeerClass) (*Stats, error) {
-	totalRes, err := s.api.MessagesSearch(ctx, &tg.MessagesSearchRequest{
-		Peer:   peer,
-		Q:      "",
-		Filter: &tg.InputMessagesFilterEmpty{},
-		Limit:  1,
+	totalRes, err := retry.Do(ctx, s.retry, func() (tg.MessagesMessagesClass, error) {
+		r, err := s.api.MessagesSearch(ctx, &tg.MessagesSearchRequest{
+			Peer:   peer,
+			Q:      "",
+			Filter: &tg.InputMessagesFilterEmpty{},
+			Limit:  1,
+		})
+		return r, retry.ClassifyError(err)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("messages.search (total): %w", err)
@@ -23,12 +28,15 @@ func (s *Service) fetchStats(ctx context.Context, peer tg.InputPeerClass) (*Stat
 	total := extractCount(totalRes)
 
 	since := int(time.Now().Add(-24 * time.Hour).Unix())
-	dayRes, err := s.api.MessagesSearch(ctx, &tg.MessagesSearchRequest{
-		Peer:    peer,
-		Q:       "",
-		Filter:  &tg.InputMessagesFilterEmpty{},
-		MinDate: since,
-		Limit:   1,
+	dayRes, err := retry.Do(ctx, s.retry, func() (tg.MessagesMessagesClass, error) {
+		r, err := s.api.MessagesSearch(ctx, &tg.MessagesSearchRequest{
+			Peer:    peer,
+			Q:       "",
+			Filter:  &tg.InputMessagesFilterEmpty{},
+			MinDate: since,
+			Limit:   1,
+		})
+		return r, retry.ClassifyError(err)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("messages.search (24h): %w", err)
@@ -37,11 +45,14 @@ func (s *Service) fetchStats(ctx context.Context, peer tg.InputPeerClass) (*Stat
 
 	stats := &Stats{TotalMessages: total, Messages24h: day}
 
-	histRes, err := s.api.MessagesGetHistory(ctx, &tg.MessagesGetHistoryRequest{
-		Peer:      peer,
-		OffsetID:  1,
-		AddOffset: -1,
-		Limit:     1,
+	histRes, err := retry.Do(ctx, s.retry, func() (tg.MessagesMessagesClass, error) {
+		r, err := s.api.MessagesGetHistory(ctx, &tg.MessagesGetHistoryRequest{
+			Peer:      peer,
+			OffsetID:  1,
+			AddOffset: -1,
+			Limit:     1,
+		})
+		return r, retry.ClassifyError(err)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("messages.getHistory (first): %w", err)

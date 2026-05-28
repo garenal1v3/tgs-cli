@@ -123,6 +123,9 @@ var defaultSleeper sleeper = realSleeper{}
 //   - On other errors, retries with exponential backoff + jitter up to MaxRetries.
 //   - Respects context cancellation at every step.
 func Do[T any](ctx context.Context, p *Policy, fn func() (T, error)) (T, error) {
+	if p == nil {
+		p = DefaultPolicy()
+	}
 	return doWithSleeper(ctx, p, fn, defaultSleeper)
 }
 
