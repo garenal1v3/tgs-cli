@@ -9,6 +9,14 @@ weight: 40
 
 `tgs sources` 让您枚举并查看账户中的 Telegram 对话——频道、超级群组、普通群组、用户和机器人。所有输出均为 JSON 格式，可直接通过 `jq` 处理或提供给 AI 代理。
 
+> **通过 `jq` 解析时：** `tgs` 把诊断日志（`[tgs] retry: …`、`[tgs] FLOOD_WAIT: …`）写入 **stderr**，JSON 写入 **stdout**。在管道传给 `jq` 时请丢弃 stderr，以免解析失败：
+>
+> ```bash
+> tgs sources list --with-stats 2>/dev/null | jq '.sources[].title'
+> ```
+>
+> 避免使用 `2>&1 | jq …`——那会把日志混进 stdout 并破坏 JSON 解析。
+
 ## 列出所有来源
 
 最简单的调用方式会返回账户中的所有对话：
@@ -90,9 +98,12 @@ tgs sources list --with-stats
 tgs sources inspect @durov
 
 # 通过数字 Telegram ID —— 使用 `id:` 前缀（裸 `-1001234…` 会被 CLI 的
-# 参数解析器当作旗标；用 `id:` 或插入 `--` 分隔符避免这一点）
+# 参数解析器当作旗标；用 `id:` 或插入 `--` 分隔符避免这一点）。
 tgs sources inspect id:-1001234567890
-tgs sources inspect -- -1001234567890
+
+# `--` 分隔符同样有效，但其后的内容都会被视为位置参数 ——
+# 命令的所有旗标必须放在 `--` 之前：
+tgs sources inspect --no-stats -- -1001234567890
 
 # 您的收藏夹（Saved Messages）
 tgs sources inspect -
@@ -100,7 +111,7 @@ tgs sources inspect -
 
 响应中包含 `list` 中没有的额外字段：`subscribed`、`description`、`creation_date`、`invite_link`。`creation_date` 仅对频道/超级群组/普通群组返回；对用户不返回（Telegram 不公开用户注册日期）。
 
-> **数字 ID 的限制：** 数字 ID 仅在该 peer 已存在于您的对话列表或本地 peer 缓存中时才能解析。若要查看您未加入的频道，请使用 `@username` 或 `+电话号码`，而非数字 ID。
+> **数字 ID 的限制：** 数字 ID 仅在该 peer 此前通过 `@username` 或 `+电话号码` 被解析过（这样会把 access_hash 写入本地 peer 缓存）后才能使用。普通的 `tgs sources list` **不会**写入 peer 缓存。如果数字 ID 的 inspect 报错 "peer is not in the local cache"，请先执行一次 `inspect @<username>` 或 `+<phone>`，再用 `id:<n>` 重试。
 
 ### 查看未订阅的频道
 

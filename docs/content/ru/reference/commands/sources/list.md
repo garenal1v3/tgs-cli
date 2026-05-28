@@ -68,7 +68,8 @@ tgs sources list --limit 50 --cursor "eyJvIjo1MCwiZCI6MH0"
 
 ## Вывод
 
-Возвращает JSON с массивом `sources`, полем `total` и `cursor` для пагинации.
+Возвращает JSON с массивом `sources`, полями `total` и `returned`, а также
+`cursor` для пагинации.
 
 ```json
 {
@@ -97,9 +98,15 @@ tgs sources list --limit 50 --cursor "eyJvIjo1MCwiZCI6MH0"
     }
   ],
   "total": 287,
+  "returned": 2,
   "cursor": "eyJvIjo1MCwiZCI6MH0"
 }
 ```
+
+`total` — число диалогов **до** фильтра и обрезки лимитом (всего в обходимой
+папке/папках), `returned` — `len(sources)`, т.е. фактический размер ответа
+после применения `--type` и `--limit`. С `--type`-фильтром обычно
+`returned < total`.
 
 При использовании `--with-stats` каждый источник также содержит объект `stats`:
 

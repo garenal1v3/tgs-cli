@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -552,6 +553,325 @@ func TestBuildInspectSeed_NilSnapshot_ChannelStillTyped(t *testing.T) {
 	// to "channel" since it's the more common subscribe target.
 	if got.Title != "" || got.Username != "" {
 		t.Errorf("expected empty Title/Username with nil snapshot, got %+v", got)
+	}
+}
+
+// TestService_List_ArchivedMergesFolders verifies that --archived returns
+// dialogs from BOTH the main folder (0) and the archive folder (1), not just
+// the archive. Telegram's messages.getDialogs reads one folder at a time, so
+// List must walk folder 0 first, then folder 1.
+func TestService_List_ArchivedMergesFolders(t *testing.T) {
+	var foldersSeen []int
+	api := &mockAPI{
+		getDialogs: func(_ context.Context, req *tg.MessagesGetDialogsRequest) (tg.MessagesDialogsClass, error) {
+			folder, _ := req.GetFolderID()
+			foldersSeen = append(foldersSeen, folder)
+			switch folder {
+			case 0:
+				ch := &tg.Channel{ID: 1, Title: "MainCh", Broadcast: true}
+				ch.SetAccessHash(1)
+				return &tg.MessagesDialogs{
+					Dialogs:  []tg.DialogClass{&tg.Dialog{Peer: &tg.PeerChannel{ChannelID: 1}, TopMessage: 10}},
+					Messages: []tg.MessageClass{&tg.Message{ID: 10, Date: 1700000010}},
+					Chats:    []tg.ChatClass{ch},
+				}, nil
+			case 1:
+				ch := &tg.Channel{ID: 2, Title: "ArchivedCh", Broadcast: true}
+				ch.SetAccessHash(2)
+				d := &tg.Dialog{Peer: &tg.PeerChannel{ChannelID: 2}, TopMessage: 5}
+				d.SetFolderID(1)
+				return &tg.MessagesDialogs{
+					Dialogs:  []tg.DialogClass{d},
+					Messages: []tg.MessageClass{&tg.Message{ID: 5, Date: 1700000005}},
+					Chats:    []tg.ChatClass{ch},
+				}, nil
+			}
+			return &tg.MessagesDialogs{}, nil
+		},
+	}
+	s := New(api, nil, nil, nil, 0)
+
+	got, err := s.List(context.Background(), ListRequest{Archived: true})
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if len(foldersSeen) != 2 || foldersSeen[0] != 0 || foldersSeen[1] != 1 {
+		t.Errorf("foldersSeen = %v, want [0 1]", foldersSeen)
+	}
+	if len(got.Sources) != 2 {
+		t.Fatalf("sources = %d, want 2 (main + archived)", len(got.Sources))
+	}
+	titles := []string{got.Sources[0].Title, got.Sources[1].Title}
+	if titles[0] != "MainCh" || titles[1] != "ArchivedCh" {
+		t.Errorf("titles = %v, want [MainCh ArchivedCh]", titles)
+	}
+	// The archived source must carry Archived=true (derived from FolderID=1 on
+	// the dialog).
+	if !got.Sources[1].Archived {
+		t.Error("archived source must have Archived=true")
+	}
+	// No more pages on either folder → no cursor.
+	if got.Cursor != "" {
+		t.Errorf("Cursor = %q, want empty (both folders exhausted)", got.Cursor)
+	}
+}
+
+// TestService_List_NotArchived_DoesNotWalkArchive sanity-checks that the
+// default (Archived=false) request still touches only folder 0 — the new
+// folder-walking logic must not fire when --archived is absent.
+func TestService_List_NotArchived_DoesNotWalkArchive(t *testing.T) {
+	var foldersSeen []int
+	api := &mockAPI{
+		getDialogs: func(_ context.Context, req *tg.MessagesGetDialogsRequest) (tg.MessagesDialogsClass, error) {
+			folder, _ := req.GetFolderID()
+			foldersSeen = append(foldersSeen, folder)
+			ch := &tg.Channel{ID: 1, Title: "Ch", Broadcast: true}
+			ch.SetAccessHash(1)
+			return &tg.MessagesDialogs{
+				Dialogs:  []tg.DialogClass{&tg.Dialog{Peer: &tg.PeerChannel{ChannelID: 1}, TopMessage: 10}},
+				Messages: []tg.MessageClass{&tg.Message{ID: 10, Date: 1700000010}},
+				Chats:    []tg.ChatClass{ch},
+			}, nil
+		},
+	}
+	s := New(api, nil, nil, nil, 0)
+	if _, err := s.List(context.Background(), ListRequest{}); err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if len(foldersSeen) != 1 || foldersSeen[0] != 0 {
+		t.Errorf("foldersSeen = %v, want [0]", foldersSeen)
+	}
+}
+
+// TestService_List_ArchivedCursorResumesFolder1 verifies that when a previous
+// page exhausted folder 0 and a cursor was emitted pointing at folder 1, a
+// follow-up call with that cursor reads only folder 1 (and doesn't restart
+// folder 0).
+func TestService_List_ArchivedCursorResumesFolder1(t *testing.T) {
+	var foldersSeen []int
+	api := &mockAPI{
+		getDialogs: func(_ context.Context, req *tg.MessagesGetDialogsRequest) (tg.MessagesDialogsClass, error) {
+			folder, _ := req.GetFolderID()
+			foldersSeen = append(foldersSeen, folder)
+			ch := &tg.Channel{ID: 2, Title: "Arch", Broadcast: true}
+			ch.SetAccessHash(2)
+			d := &tg.Dialog{Peer: &tg.PeerChannel{ChannelID: 2}, TopMessage: 5}
+			d.SetFolderID(1)
+			return &tg.MessagesDialogs{
+				Dialogs:  []tg.DialogClass{d},
+				Messages: []tg.MessageClass{&tg.Message{ID: 5, Date: 1700000005}},
+				Chats:    []tg.ChatClass{ch},
+			}, nil
+		},
+	}
+	s := New(api, nil, nil, nil, 0)
+
+	resumeCursor := (&Cursor{Folder: 1}).Encode()
+	got, err := s.List(context.Background(), ListRequest{Archived: true, Cursor: resumeCursor})
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if len(foldersSeen) != 1 || foldersSeen[0] != 1 {
+		t.Errorf("foldersSeen = %v, want [1] (cursor must resume on folder 1)", foldersSeen)
+	}
+	if len(got.Sources) != 1 || got.Sources[0].Title != "Arch" {
+		t.Errorf("sources = %+v, want one archived source", got.Sources)
+	}
+}
+
+// TestService_List_ArchivedLimitCrossFolderEmitsCursor checks that --archived
+// with a --limit that lands mid-archive emits a cursor pointing at the last
+// item we kept, so a follow-up call resumes in the archive folder instead of
+// silently dropping the unread tail.
+func TestService_List_ArchivedLimitCrossFolderEmitsCursor(t *testing.T) {
+	calls := 0
+	api := &mockAPI{
+		getDialogs: func(_ context.Context, req *tg.MessagesGetDialogsRequest) (tg.MessagesDialogsClass, error) {
+			calls++
+			folder, _ := req.GetFolderID()
+			switch folder {
+			case 0:
+				ch := &tg.Channel{ID: 1, Title: "M", Broadcast: true}
+				ch.SetAccessHash(1)
+				return &tg.MessagesDialogs{
+					Dialogs:  []tg.DialogClass{&tg.Dialog{Peer: &tg.PeerChannel{ChannelID: 1}, TopMessage: 10}},
+					Messages: []tg.MessageClass{&tg.Message{ID: 10, Date: 1700000010}},
+					Chats:    []tg.ChatClass{ch},
+				}, nil
+			case 1:
+				// Two archived channels — but limit will only take one.
+				ch1 := &tg.Channel{ID: 2, Title: "A1", Broadcast: true}
+				ch1.SetAccessHash(2)
+				ch2 := &tg.Channel{ID: 3, Title: "A2", Broadcast: true}
+				ch2.SetAccessHash(3)
+				d1 := &tg.Dialog{Peer: &tg.PeerChannel{ChannelID: 2}, TopMessage: 5}
+				d1.SetFolderID(1)
+				d2 := &tg.Dialog{Peer: &tg.PeerChannel{ChannelID: 3}, TopMessage: 4}
+				d2.SetFolderID(1)
+				return &tg.MessagesDialogs{
+					Dialogs:  []tg.DialogClass{d1, d2},
+					Messages: []tg.MessageClass{&tg.Message{ID: 5, Date: 1700000005}, &tg.Message{ID: 4, Date: 1700000004}},
+					Chats:    []tg.ChatClass{ch1, ch2},
+				}, nil
+			}
+			return &tg.MessagesDialogs{}, nil
+		},
+	}
+	s := New(api, nil, nil, nil, 0)
+
+	got, err := s.List(context.Background(), ListRequest{Archived: true, Limit: 2})
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if got.Returned != 2 {
+		t.Fatalf("Returned = %d, want 2 (1 main + 1 archived)", got.Returned)
+	}
+	if got.Cursor == "" {
+		t.Fatal("expected non-empty cursor (one archived dialog was discarded)")
+	}
+	// Cursor must point at folder 1 (archive), at the last item we kept
+	// (the first archived channel, A1 with id=2).
+	c, err := DecodeCursor(got.Cursor)
+	if err != nil {
+		t.Fatalf("DecodeCursor: %v", err)
+	}
+	if c.Folder != 1 {
+		t.Errorf("cursor.Folder = %d, want 1 (archive)", c.Folder)
+	}
+	if c.OffsetPeerType != "channel" || c.OffsetPeerID != 2 {
+		t.Errorf("cursor points at peer (%s,%d), want (channel,2)", c.OffsetPeerType, c.OffsetPeerID)
+	}
+	if c.OffsetID != 5 {
+		t.Errorf("cursor.OffsetID = %d, want 5 (last in-limit message id)", c.OffsetID)
+	}
+	_ = calls
+}
+
+// TestService_List_LimitMidPageEmitsCursorFromKeptItem covers the same
+// principle within a single folder: --limit cuts a page in half, so the
+// emitted cursor must be derived from the last kept item — NOT from the
+// Telegram-supplied next-page cursor that points past the dropped tail.
+func TestService_List_LimitMidPageEmitsCursorFromKeptItem(t *testing.T) {
+	api := &mockAPI{
+		getDialogs: func(_ context.Context, _ *tg.MessagesGetDialogsRequest) (tg.MessagesDialogsClass, error) {
+			ch1 := &tg.Channel{ID: 1, Title: "C1", Broadcast: true}
+			ch1.SetAccessHash(11)
+			ch2 := &tg.Channel{ID: 2, Title: "C2", Broadcast: true}
+			ch2.SetAccessHash(22)
+			ch3 := &tg.Channel{ID: 3, Title: "C3", Broadcast: true}
+			ch3.SetAccessHash(33)
+			// Slice form, Count > len(dialogs) → hasMore=true → would normally
+			// produce a Telegram-supplied next cursor pointing past id=3.
+			return &tg.MessagesDialogsSlice{
+				Count: 100,
+				Dialogs: []tg.DialogClass{
+					&tg.Dialog{Peer: &tg.PeerChannel{ChannelID: 1}, TopMessage: 30},
+					&tg.Dialog{Peer: &tg.PeerChannel{ChannelID: 2}, TopMessage: 20},
+					&tg.Dialog{Peer: &tg.PeerChannel{ChannelID: 3}, TopMessage: 10},
+				},
+				Messages: []tg.MessageClass{
+					&tg.Message{ID: 30, Date: 1700000030},
+					&tg.Message{ID: 20, Date: 1700000020},
+					&tg.Message{ID: 10, Date: 1700000010},
+				},
+				Chats: []tg.ChatClass{ch1, ch2, ch3},
+			}, nil
+		},
+	}
+	s := New(api, nil, nil, nil, 0)
+
+	got, err := s.List(context.Background(), ListRequest{Limit: 2})
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if got.Returned != 2 {
+		t.Fatalf("Returned = %d, want 2", got.Returned)
+	}
+	if got.Cursor == "" {
+		t.Fatal("expected non-empty cursor")
+	}
+	c, err := DecodeCursor(got.Cursor)
+	if err != nil {
+		t.Fatalf("DecodeCursor: %v", err)
+	}
+	if c.OffsetID != 20 {
+		t.Errorf("cursor.OffsetID = %d, want 20 (last in-limit msg id, not 10 which is past the limit)", c.OffsetID)
+	}
+	if c.OffsetPeerID != 2 {
+		t.Errorf("cursor.OffsetPeerID = %d, want 2 (last in-limit peer)", c.OffsetPeerID)
+	}
+}
+
+// TestService_List_ReturnedEqualsSourcesLen verifies that the Returned field
+// in ListResult is the post-filter, post-limit length — and specifically that
+// applying --type yields Returned < Total.
+func TestService_List_ReturnedEqualsSourcesLen(t *testing.T) {
+	api := &mockAPI{
+		getDialogs: func(_ context.Context, _ *tg.MessagesGetDialogsRequest) (tg.MessagesDialogsClass, error) {
+			ch := &tg.Channel{ID: 1, Title: "C", Broadcast: true}
+			ch.SetAccessHash(1)
+			user := &tg.User{ID: 2}
+			user.SetFirstName("Bob")
+			user.SetAccessHash(2)
+			return &tg.MessagesDialogs{
+				Dialogs: []tg.DialogClass{
+					&tg.Dialog{Peer: &tg.PeerChannel{ChannelID: 1}, TopMessage: 10},
+					&tg.Dialog{Peer: &tg.PeerUser{UserID: 2}, TopMessage: 20},
+				},
+				Messages: []tg.MessageClass{
+					&tg.Message{ID: 10, Date: 1700000000},
+					&tg.Message{ID: 20, Date: 1700000001},
+				},
+				Chats: []tg.ChatClass{ch},
+				Users: []tg.UserClass{user},
+			}, nil
+		},
+	}
+	s := New(api, nil, nil, nil, 0)
+
+	got, err := s.List(context.Background(), ListRequest{Types: []string{"user"}})
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if got.Returned != len(got.Sources) {
+		t.Errorf("Returned = %d, want %d (= len sources)", got.Returned, len(got.Sources))
+	}
+	if got.Returned != 1 {
+		t.Errorf("Returned = %d, want 1 (only the user)", got.Returned)
+	}
+	if got.Total != 2 {
+		t.Errorf("Total = %d, want 2 (unfiltered)", got.Total)
+	}
+}
+
+// TestService_Inspect_NumericIDCacheMissReturnsError verifies that inspecting
+// by `id:<n>` for a channel/user not in the peer cache fails with a clear
+// error message instead of silently returning a peer with AccessHash=0 (which
+// makes Telegram return garbage with empty fields).
+func TestService_Inspect_NumericIDCacheMissReturnsError(t *testing.T) {
+	cachePath := filepath.Join(t.TempDir(), "peers.db")
+	cache, err := resolve.NewPeerCache(cachePath)
+	if err != nil {
+		t.Fatalf("NewPeerCache: %v", err)
+	}
+	defer func() { _ = cache.Close() }()
+
+	resolver := resolve.NewResolver(nil, cache)
+	s := New(&mockAPI{}, resolver, nil, nil, 0)
+
+	// Positive ID (user) — no cache entry → must error out.
+	_, err = s.Inspect(context.Background(), InspectRequest{Ref: "id:489000", NoStats: true})
+	if err == nil {
+		t.Fatal("expected error for cache-miss numeric user ID, got nil")
+	}
+	if !strings.Contains(err.Error(), "access hash") {
+		t.Errorf("error = %q, want mention of 'access hash'", err.Error())
+	}
+
+	// Negative channel ID — same expectation.
+	_, err = s.Inspect(context.Background(), InspectRequest{Ref: "id:-1009999999999", NoStats: true})
+	if err == nil {
+		t.Fatal("expected error for cache-miss numeric channel ID, got nil")
 	}
 }
 

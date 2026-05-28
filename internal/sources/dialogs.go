@@ -19,19 +19,19 @@ type sourceWithPeer struct {
 
 // fetchDialogs makes one messages.getDialogs call and returns the converted
 // items (Source + InputPeer for follow-up calls), a next-page cursor (nil if
-// no more pages), and the server-reported total. archived selects folder 1
-// (archive) when true, folder 0 otherwise. selfID is the authenticated user's
-// ID, used for Saved Messages detection.
-func (s *Service) fetchDialogs(ctx context.Context, cur *Cursor, limit int, archived bool, selfID int64) ([]sourceWithPeer, *Cursor, int, error) {
+// no more pages in this folder), and the server-reported total for the folder.
+// folderID selects which Telegram folder to read (0 = main, 1 = archive).
+// selfID is the authenticated user's ID, used for Saved Messages detection.
+//
+// The returned next cursor (if any) inherits folderID — it points to the next
+// page of the *same* folder. Crossing into a different folder is the caller's
+// responsibility (see Service.List).
+func (s *Service) fetchDialogs(ctx context.Context, cur *Cursor, limit, folderID int, selfID int64) ([]sourceWithPeer, *Cursor, int, error) {
 	req := &tg.MessagesGetDialogsRequest{
 		OffsetPeer: &tg.InputPeerEmpty{},
 		Limit:      limit,
 	}
-	if archived {
-		req.SetFolderID(1)
-	} else {
-		req.SetFolderID(0)
-	}
+	req.SetFolderID(folderID)
 	if cur != nil {
 		req.OffsetDate = cur.OffsetDate
 		req.OffsetID = cur.OffsetID
@@ -119,6 +119,7 @@ func (s *Service) fetchDialogs(ctx context.Context, cur *Cursor, limit int, arch
 		OffsetPeerType:       lastPeerType,
 		OffsetPeerID:         lastPeerID,
 		OffsetPeerAccessHash: lastPeerAccess,
+		Folder:               folderID,
 	}
 	return out, next, total, nil
 }

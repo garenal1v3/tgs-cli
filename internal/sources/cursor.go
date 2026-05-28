@@ -6,12 +6,19 @@ import (
 )
 
 // Cursor encodes pagination state for messages.getDialogs.
+//
+// Folder distinguishes Telegram's main folder (0) from the archive (1).
+// messages.getDialogs returns only one folder at a time; when --archived is
+// set the List walks folder 0 to completion and then continues with folder 1.
+// The cursor must remember which folder we're on so that pagination across
+// process boundaries (multiple CLI invocations) resumes correctly.
 type Cursor struct {
 	OffsetDate           int    `json:"d"`
 	OffsetID             int    `json:"o"`
 	OffsetPeerType       string `json:"pt,omitempty"` // "user" | "chat" | "channel" | ""
 	OffsetPeerID         int64  `json:"pi,omitempty"`
 	OffsetPeerAccessHash int64  `json:"ph,omitempty"`
+	Folder               int    `json:"f,omitempty"` // 0 = main (default), 1 = archive
 }
 
 // Encode serialises the cursor as base64 RawURL-encoded JSON.

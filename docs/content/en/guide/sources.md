@@ -7,6 +7,14 @@ weight: 40
 
 `tgs sources` lets you enumerate and inspect the Telegram dialogs in your account — channels, supergroups, groups, users, and bots. All output is JSON, ready to pipe into `jq` or feed to an AI agent.
 
+> **Piping to `jq`:** `tgs` writes diagnostic logs (`[tgs] retry: …`, `[tgs] FLOOD_WAIT: …`) to **stderr** and JSON to **stdout**. When piping into `jq`, drop stderr to keep the parser happy:
+>
+> ```bash
+> tgs sources list --with-stats 2>/dev/null | jq '.sources[].title'
+> ```
+>
+> Avoid `2>&1 | jq …` — that mixes log lines into stdout and breaks JSON parsing.
+
 ## Listing all your sources
 
 The simplest invocation returns every dialog in your account:
@@ -90,7 +98,10 @@ tgs sources inspect @durov
 # By numeric Telegram ID — use the `id:` prefix (a bare "-1001234…" is eaten
 # by the CLI's flag parser; use `id:` or insert `--` to disambiguate).
 tgs sources inspect id:-1001234567890
-tgs sources inspect -- -1001234567890
+
+# `--` works too, but everything after it is treated as positional, so any
+# command flags must come BEFORE the separator:
+tgs sources inspect --no-stats -- -1001234567890
 
 # Your Saved Messages
 tgs sources inspect -
@@ -98,7 +109,7 @@ tgs sources inspect -
 
 The response includes extra fields not available in `list`: `subscribed`, `description`, `creation_date`, and `invite_link`. For broadcast channels, `creation_date` reflects when the channel was created; for users, it is omitted (Telegram does not expose user registration date).
 
-> **Numeric ID limitation:** Numeric IDs only resolve if the peer is already in your dialogs or in the local peer cache. To inspect a channel you haven't joined, use `@username` or `+phone` — not a numeric ID.
+> **Numeric ID limitation:** Numeric IDs only work if the peer was previously resolved by `@username` or `+phone` (which populates the local peer cache with the required access hash). Plain `tgs sources list` does NOT seed the cache. If a numeric-ID inspect fails with "peer is not in the local cache", run one `inspect @<username>` (or `+<phone>`) first, then retry with `id:<n>`.
 
 ### Inspecting a channel you're not subscribed to
 

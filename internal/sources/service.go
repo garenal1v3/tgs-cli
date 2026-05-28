@@ -38,6 +38,12 @@ func New(api API, resolver *resolve.Resolver, retryPolicy *retry.Policy, cache *
 
 // List returns sources from the user's dialogs, optionally enriched with
 // expensive metrics (--with-stats).
+//
+// When req.Archived is true, the list contains both main (folder 0) and
+// archived (folder 1) dialogs — Telegram's messages.getDialogs returns one
+// folder at a time, so we walk folder 0 first and then continue with folder
+// 1. The cursor carries the current folder so paginated calls resume in the
+// right place.
 func (s *Service) List(ctx context.Context, req ListRequest) (*ListResult, error) {
 	cur, err := DecodeCursor(req.Cursor)
 	if err != nil {
@@ -49,12 +55,19 @@ func (s *Service) List(ctx context.Context, req ListRequest) (*ListResult, error
 		pageSize = req.Limit
 	}
 
+	// Start folder is determined by the cursor (resuming pagination) or by 0
+	// for a fresh call.
+	currentFolder := 0
+	if cur != nil {
+		currentFolder = cur.Folder
+	}
+
 	var all []sourceWithPeer
 	var totalAcc int
 	var totalSeen int // unfiltered count actually returned across pages
 	var nextCursor *Cursor
 	for {
-		page, next, total, err := s.fetchDialogs(ctx, cur, pageSize, req.Archived, s.selfID)
+		page, next, total, err := s.fetchDialogs(ctx, cur, pageSize, currentFolder, s.selfID)
 		if err != nil {
 			return nil, err
 		}
@@ -65,24 +78,49 @@ func (s *Service) List(ctx context.Context, req ListRequest) (*ListResult, error
 		// Filter each page before accumulating so the limit check counts only
 		// matching items (fixes: --type bot --limit 2 returning empty results).
 		page = filterByType(page, req.Types)
+
+		// Apply --limit BEFORE appending the page in full, so we don't
+		// silently drop matched items from a long final page. Without this
+		// pre-check we'd accumulate len(all) > req.Limit, then truncate the
+		// tail at the end of the function — and any next-page cursor would
+		// point past the dropped tail. Building the cursor from the
+		// last-kept item instead lets a follow-up call resume exactly where
+		// this one stopped, regardless of whether more items are available
+		// in the current folder or the archive.
+		if req.Limit > 0 && len(all)+len(page) >= req.Limit {
+			take := req.Limit - len(all)
+			if take > 0 {
+				all = append(all, page[:take]...)
+				nextCursor = cursorFromItem(all[len(all)-1], currentFolder)
+			} else if next != nil {
+				// We already had >= limit items from a previous page; pass
+				// through the Telegram-supplied cursor for the next call.
+				nextCursor = next
+			}
+			break
+		}
 		all = append(all, page...)
-		if next == nil {
-			break
+
+		if next != nil {
+			cur = next
+			continue
 		}
-		cur = next
-		if req.Limit > 0 && len(all) >= req.Limit {
-			nextCursor = next
-			break
+
+		// Current folder exhausted. If --archived was requested and we're
+		// still on the main folder, jump to the archive folder.
+		if req.Archived && currentFolder == 0 {
+			currentFolder = 1
+			cur = nil
+			continue
 		}
+
+		break
 	}
 	// Telegram's reported Count is sometimes smaller than the slice it
 	// actually returns (stale dialog-count cache). Make sure total never
 	// under-reports what we returned.
 	if totalSeen > totalAcc {
 		totalAcc = totalSeen
-	}
-	if req.Limit > 0 && len(all) > req.Limit {
-		all = all[:req.Limit]
 	}
 
 	if req.WithStats {
@@ -94,8 +132,9 @@ func (s *Service) List(ctx context.Context, req ListRequest) (*ListResult, error
 		sources[i] = it.Source
 	}
 	result := &ListResult{
-		Sources: sources,
-		Total:   totalAcc,
+		Sources:  sources,
+		Total:    totalAcc,
+		Returned: len(sources),
 	}
 	if nextCursor != nil {
 		result.Cursor = nextCursor.Encode()
@@ -160,6 +199,17 @@ func (s *Service) resolveForInspect(ctx context.Context, ref string) (tg.InputPe
 		return nil, nil, Source{}, err
 	}
 
+	// Numeric-ID resolves only succeed if a previous @username/+phone resolve
+	// populated the peer cache. Without an access hash, Telegram's
+	// channels.getFullChannel / users.getFullUser silently return garbage —
+	// so reject the call up front with a hint about what to use instead.
+	if meta.Snapshot == nil && needsAccessHash(peer) {
+		return nil, nil, Source{}, fmt.Errorf(
+			"cannot inspect by numeric ID %q without an access hash: peer is not in the local cache. Run `tgs sources inspect @<username>` (or `+<phone>`) once to cache the peer, then numeric-ID inspect will work",
+			ref,
+		)
+	}
+
 	src := buildInspectSeed(peer, meta.Snapshot)
 	if src.ID == 0 {
 		return nil, nil, Source{}, fmt.Errorf("unsupported peer type: %T", peer)
@@ -171,6 +221,43 @@ func (s *Service) resolveForInspect(ctx context.Context, ref string) (tg.InputPe
 		subscribed = &yes
 	}
 	return peer, subscribed, src, nil
+}
+
+// cursorFromItem builds a getDialogs offset pointing AT the supplied item;
+// Telegram then returns dialogs strictly older than (peer, date, id) on the
+// next request. Used by List when --limit interrupts iteration mid-page —
+// the Telegram-supplied next cursor would point past the tail we discarded,
+// so we synthesise one from the last item we actually kept.
+func cursorFromItem(it sourceWithPeer, folder int) *Cursor {
+	c := &Cursor{Folder: folder}
+	if it.Source.LastMessage != nil {
+		c.OffsetID = it.Source.LastMessage.ID
+		if t, err := time.Parse(time.RFC3339, it.Source.LastMessage.Date); err == nil {
+			c.OffsetDate = int(t.Unix())
+		}
+	}
+	switch p := it.Peer.(type) {
+	case *tg.InputPeerChannel:
+		c.OffsetPeerType, c.OffsetPeerID, c.OffsetPeerAccessHash = "channel", p.ChannelID, p.AccessHash
+	case *tg.InputPeerChat:
+		c.OffsetPeerType, c.OffsetPeerID = "chat", p.ChatID
+	case *tg.InputPeerUser:
+		c.OffsetPeerType, c.OffsetPeerID, c.OffsetPeerAccessHash = "user", p.UserID, p.AccessHash
+	}
+	return c
+}
+
+// needsAccessHash reports whether a peer needs a non-zero access hash to be
+// useful for follow-up Telegram calls. Channels and users do; legacy chats
+// (InputPeerChat) don't, and InputPeerSelf is always valid.
+func needsAccessHash(peer tg.InputPeerClass) bool {
+	switch p := peer.(type) {
+	case *tg.InputPeerUser:
+		return p.AccessHash == 0
+	case *tg.InputPeerChannel:
+		return p.AccessHash == 0
+	}
+	return false
 }
 
 // markSelf flags a Source as Saved Messages when its ID matches the

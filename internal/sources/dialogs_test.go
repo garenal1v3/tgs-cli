@@ -60,7 +60,7 @@ func TestFetchDialogs_SinglePage(t *testing.T) {
 		},
 	}
 	s := &Service{api: api}
-	items, nextCursor, total, err := s.fetchDialogs(context.Background(), nil, 100, false, 0)
+	items, nextCursor, total, err := s.fetchDialogs(context.Background(), nil, 100, 0, 0)
 	if err != nil {
 		t.Fatalf("fetchDialogs: %v", err)
 	}
@@ -105,7 +105,7 @@ func TestFetchDialogs_SliceWithCursor(t *testing.T) {
 		},
 	}
 	s := &Service{api: api}
-	items, nextCursor, total, err := s.fetchDialogs(context.Background(), nil, 1, false, 0)
+	items, nextCursor, total, err := s.fetchDialogs(context.Background(), nil, 1, 0, 0)
 	if err != nil {
 		t.Fatalf("fetchDialogs: %v", err)
 	}

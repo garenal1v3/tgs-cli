@@ -8,6 +8,25 @@ import (
 // (e.g. 1234567890 -> -1001234567890).
 func botAPIChannelID(id int64) int64 { return -1000000000000 - id }
 
+// activeUsername returns the user-visible handle for a peer. It prefers the
+// legacy single Username field; if that is empty it falls back to the first
+// active entry from the collectible-usernames array (Telegram's newer
+// "additional usernames" model — see tg.Username with Active=true). Without
+// this fallback, well-known peers like @durov or @money — whose primary
+// handle now lives in Usernames[].Username with Active=true while the legacy
+// Username field is empty — silently appear as access=private, username="".
+func activeUsername(legacy string, list []tg.Username) string {
+	if legacy != "" {
+		return legacy
+	}
+	for _, u := range list {
+		if u.Active && u.Username != "" {
+			return u.Username
+		}
+	}
+	return ""
+}
+
 // chatToSource converts a tg.ChatClass into a partial Source (without
 // LastMessage/UnreadCount/Stats/full info). Returns zero Source on unknown types.
 func chatToSource(c tg.ChatClass) Source {
@@ -31,7 +50,9 @@ func chatToSource(c tg.ChatClass) Source {
 		} else {
 			s.Type = "supergroup"
 		}
-		if un, ok := v.GetUsername(); ok && un != "" {
+		legacy, _ := v.GetUsername()
+		extra, _ := v.GetUsernames()
+		if un := activeUsername(legacy, extra); un != "" {
 			s.Username = un
 			s.Access = "public"
 		} else {
@@ -69,7 +90,9 @@ func userToSource(u *tg.User, selfID int64) Source {
 	if ln, ok := u.GetLastName(); ok {
 		s.LastName = ln
 	}
-	if un, ok := u.GetUsername(); ok {
+	legacy, _ := u.GetUsername()
+	extra, _ := u.GetUsernames()
+	if un := activeUsername(legacy, extra); un != "" {
 		s.Username = un
 	}
 	if ph, ok := u.GetPhone(); ok {

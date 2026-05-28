@@ -68,7 +68,7 @@ tgs sources list --limit 50 --cursor "eyJvIjo1MCwiZCI6MH0"
 
 ## 输出
 
-返回 JSON 对象，包含 `sources` 数组、`total` 总数和用于分页的 `cursor`。
+返回 JSON 对象，包含 `sources` 数组、`total`、`returned` 以及用于分页的 `cursor`。
 
 ```json
 {
@@ -97,9 +97,14 @@ tgs sources list --limit 50 --cursor "eyJvIjo1MCwiZCI6MH0"
     }
   ],
   "total": 287,
+  "returned": 2,
   "cursor": "eyJvIjo1MCwiZCI6MH0"
 }
 ```
+
+`total` 表示在筛选与限流之前的总数（遍历的文件夹内的所有对话），`returned`
+则是 `len(sources)`——经过 `--type` 与 `--limit` 之后实际返回的数量。带
+`--type` 过滤时通常 `returned < total`。
 
 使用 `--with-stats` 时，每个来源还包含 `stats` 对象：
 

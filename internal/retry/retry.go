@@ -67,6 +67,8 @@ var permanentTypes = []string{
 	"INPUT_FILTER_INVALID",
 	"SEARCH_QUERY_EMPTY",
 	"CHANNEL_INVALID",
+	"USER_ID_INVALID",
+	"INPUT_USER_DEACTIVATED",
 }
 
 // ClassifyError converts a gotd/td RPC error into a FloodWaitError,

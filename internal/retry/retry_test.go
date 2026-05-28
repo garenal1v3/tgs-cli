@@ -225,6 +225,20 @@ func TestClassifyError_Permanent(t *testing.T) {
 	}
 }
 
+// TestClassifyError_UserIDInvalidIsPermanent guards against regressing the
+// retry list: USER_ID_INVALID is not a transient error and must NOT trigger
+// the exponential-backoff loop.
+func TestClassifyError_UserIDInvalidIsPermanent(t *testing.T) {
+	for _, code := range []string{"USER_ID_INVALID", "INPUT_USER_DEACTIVATED"} {
+		err := tgerr.New(400, code)
+		classified := ClassifyError(err)
+		var permErr *PermanentError
+		if !errors.As(classified, &permErr) {
+			t.Errorf("%s: expected PermanentError, got %T: %v", code, classified, classified)
+		}
+	}
+}
+
 func TestClassifyError_Transient(t *testing.T) {
 	err := tgerr.New(500, "RPC_CALL_FAIL")
 	classified := ClassifyError(err)

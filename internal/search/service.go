@@ -524,8 +524,10 @@ func buildChatMap(chats []tg.ChatClass) map[int64]ChatInfo {
 				ID:    v.ID,
 				Title: v.Title,
 			}
-			if username, ok := v.GetUsername(); ok {
-				ci.Username = username
+			legacy, _ := v.GetUsername()
+			extra, _ := v.GetUsernames()
+			if un := activeUsername(legacy, extra); un != "" {
+				ci.Username = un
 			}
 			if v.Broadcast {
 				ci.Type = "channel"
@@ -553,12 +555,32 @@ func buildUserMap(users []tg.UserClass) map[int64]UserInfo {
 		if ln, ok := user.GetLastName(); ok {
 			ui.LastName = ln
 		}
-		if un, ok := user.GetUsername(); ok {
+		legacy, _ := user.GetUsername()
+		extra, _ := user.GetUsernames()
+		if un := activeUsername(legacy, extra); un != "" {
 			ui.Username = un
 		}
 		m[user.ID] = ui
 	}
 	return m
+}
+
+// activeUsername returns a peer's user-visible handle. Prefers the legacy
+// Username field; if empty, falls back to the first Active entry in the
+// collectible-usernames array (tg.Username with Active=true) — required for
+// peers like @durov or @money whose primary handle now lives in that array.
+// Without this fallback search results displayed such peers with an empty
+// username and inferred private access.
+func activeUsername(legacy string, list []tg.Username) string {
+	if legacy != "" {
+		return legacy
+	}
+	for _, u := range list {
+		if u.Active && u.Username != "" {
+			return u.Username
+		}
+	}
+	return ""
 }
 
 // peerID extracts a numeric ID from an InputPeerClass.

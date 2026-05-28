@@ -49,8 +49,9 @@ tgs sources inspect @durov
 
 ```bash
 tgs sources inspect id:-1009876543210
-# или с разделителем `--`:
-tgs sources inspect -- -1009876543210
+# или с разделителем `--` (внимание: флаги команды должны идти ДО `--`,
+# так как всё после разделителя становится позиционным аргументом):
+tgs sources inspect --no-stats -- -1009876543210
 ```
 
 Изучить своё «Избранное»:
@@ -121,7 +122,7 @@ tgs sources inspect @golang --profile work
 
 ### Замечания по флагам
 
-`--no-cache` отключает peer-кеш (BoltDB в `~/.tgs/<profile>/peers.db`), в обход кэша username-резолва и snapshot отображаемых полей. У `inspect` нет отдельного кеша статистики — он влияет только на `tgs sources list --with-stats`.
+`--no-cache` отключает peer-кеш (BoltDB по пути `$XDG_DATA_HOME/tgs/profiles/<profile>/cache.db`, по умолчанию это `~/.local/share/tgs/profiles/<profile>/cache.db` на Linux/macOS) — обходится и кэш username-резолва, и snapshot отображаемых полей. Рядом лежит `stats_cache.db`, на который опирается `tgs sources list --with-stats`; `inspect` его не использует.
 
 ## Смотрите также
 

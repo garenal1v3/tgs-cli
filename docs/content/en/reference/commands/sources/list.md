@@ -66,7 +66,8 @@ tgs sources list --limit 50 --cursor "eyJvIjo1MCwiZCI6MH0"
 
 ## Output
 
-Returns a JSON object with a `sources` array, a `total` count, and a `cursor` for pagination.
+Returns a JSON object with a `sources` array, a `total` count, a `returned`
+count, and a `cursor` for pagination.
 
 ```json
 {
@@ -95,9 +96,14 @@ Returns a JSON object with a `sources` array, a `total` count, and a `cursor` fo
     }
   ],
   "total": 287,
+  "returned": 2,
   "cursor": "eyJvIjo1MCwiZCI6MH0"
 }
 ```
+
+`total` is the unfiltered count (all dialogs in the folder(s) walked), while
+`returned` is `len(sources)` after `--type` filtering and `--limit` trimming.
+With a `--type` filter you'll typically see `returned < total`.
 
 When `--with-stats` is set, each source also includes a `stats` object:
 

@@ -118,3 +118,71 @@ func TestUserToSource_Deleted(t *testing.T) {
 		t.Error("Deleted flag should be true")
 	}
 }
+
+// TestChatToSource_CollectibleUsername covers the case where a channel's
+// primary handle has been migrated to the collectible-usernames array
+// (Active=true), and the legacy Username field is empty. Without the
+// activeUsername fallback such channels reported access="private" with an
+// empty username — exactly what we saw for @durov and @money.
+func TestChatToSource_CollectibleUsername(t *testing.T) {
+	ch := &tg.Channel{ID: 1, Title: "Durov", Broadcast: true}
+	ch.SetAccessHash(1)
+	// Legacy Username is intentionally NOT set; primary handle lives in
+	// the Usernames array as an active entry.
+	ch.SetUsernames([]tg.Username{
+		{Active: false, Username: "old_handle"},
+		{Active: true, Username: "durov"},
+	})
+
+	got := chatToSource(ch)
+
+	if got.Username != "durov" {
+		t.Errorf("Username = %q, want durov (from collectible Usernames)", got.Username)
+	}
+	if got.Access != "public" {
+		t.Errorf("Access = %q, want public (peer has an active handle)", got.Access)
+	}
+}
+
+// TestChatToSource_LegacyUsernameWinsOverCollectible verifies that if a peer
+// still uses the legacy Username field, we keep using it (Telegram doesn't
+// duplicate it into Usernames in that case).
+func TestChatToSource_LegacyUsernameWinsOverCollectible(t *testing.T) {
+	ch := &tg.Channel{ID: 1, Title: "X", Broadcast: true}
+	ch.SetUsername("legacy")
+	ch.SetUsernames([]tg.Username{{Active: true, Username: "fallback"}})
+	got := chatToSource(ch)
+	if got.Username != "legacy" {
+		t.Errorf("Username = %q, want legacy (legacy wins when set)", got.Username)
+	}
+}
+
+// TestChatToSource_NoActiveUsernameStaysPrivate makes sure that a channel
+// whose collectible array contains only Active=false entries reports as
+// private (we shouldn't pick a disabled handle).
+func TestChatToSource_NoActiveUsernameStaysPrivate(t *testing.T) {
+	ch := &tg.Channel{ID: 1, Title: "X", Broadcast: true}
+	ch.SetUsernames([]tg.Username{{Active: false, Username: "disabled"}})
+	got := chatToSource(ch)
+	if got.Username != "" {
+		t.Errorf("Username = %q, want empty (no active handle)", got.Username)
+	}
+	if got.Access != "private" {
+		t.Errorf("Access = %q, want private", got.Access)
+	}
+}
+
+// TestUserToSource_CollectibleUsername mirrors the channel test for users:
+// the primary handle now lives in user.Usernames with Active=true, and the
+// legacy Username field is empty.
+func TestUserToSource_CollectibleUsername(t *testing.T) {
+	u := &tg.User{ID: 100}
+	u.SetFirstName("Pavel")
+	u.SetUsernames([]tg.Username{{Active: true, Username: "durov"}})
+
+	got := userToSource(u, 0)
+
+	if got.Username != "durov" {
+		t.Errorf("Username = %q, want durov (from collectible Usernames)", got.Username)
+	}
+}

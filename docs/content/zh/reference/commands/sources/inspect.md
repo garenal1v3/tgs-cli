@@ -49,8 +49,9 @@ tgs sources inspect @durov
 
 ```bash
 tgs sources inspect id:-1009876543210
-# 或使用 `--` 分隔符：
-tgs sources inspect -- -1009876543210
+# 或使用 `--` 分隔符（注意：命令旗标必须放在 `--` **之前**，
+# 因为分隔符之后的内容都会被当作位置参数处理）：
+tgs sources inspect --no-stats -- -1009876543210
 ```
 
 查看收藏夹：
@@ -121,7 +122,7 @@ tgs sources inspect @golang --profile work
 
 ### 旗标说明
 
-`--no-cache` 禁用 peer 缓存（位于 `~/.tgs/<profile>/peers.db` 的 BoltDB），跳过用户名解析缓存及展示字段快照。`inspect` 没有独立的统计缓存——该缓存只影响 `tgs sources list --with-stats`。
+`--no-cache` 禁用 peer 缓存（BoltDB，位于 `$XDG_DATA_HOME/tgs/profiles/<profile>/cache.db`，Linux/macOS 默认为 `~/.local/share/tgs/profiles/<profile>/cache.db`），同时跳过用户名解析缓存与展示字段快照。`inspect` 不使用与之并列的 `stats_cache.db`——后者仅服务于 `tgs sources list --with-stats`。
 
 ## 另请参阅
 

@@ -47,8 +47,9 @@ Inspect a group by numeric ID (use the `id:` form to avoid the CLI flag parser):
 
 ```bash
 tgs sources inspect id:-1009876543210
-# or with a literal `--` separator:
-tgs sources inspect -- -1009876543210
+# or with a literal `--` separator (note: command flags must come BEFORE `--`,
+# since anything after the separator is treated as positional):
+tgs sources inspect --no-stats -- -1009876543210
 ```
 
 Inspect your Saved Messages:
@@ -119,7 +120,7 @@ Boolean fields (`verified`, `scam`, `fake`, `restricted`, `archived`, `pinned`, 
 
 ### Flag notes
 
-`--no-cache` disables the peer cache (the BoltDB at `~/.tgs/<profile>/peers.db`) so that `@username` resolves and any cached display snapshot are bypassed. `inspect` does not maintain a separate stats cache — that cache only affects `tgs sources list --with-stats`.
+`--no-cache` disables the peer cache (the BoltDB stored at `$XDG_DATA_HOME/tgs/profiles/<profile>/cache.db`, defaulting to `~/.local/share/tgs/profiles/<profile>/cache.db` on Linux/macOS) so that `@username` resolves and any cached display snapshot are bypassed. The companion `stats_cache.db` next to it backs `tgs sources list --with-stats` — `inspect` does not use it.
 
 ## See Also
 

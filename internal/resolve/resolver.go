@@ -185,8 +185,10 @@ func populateEntrySnapshot(entry *CacheEntry, res *tg.ContactsResolvedPeer) {
 				continue
 			}
 			entry.Title = ch.Title
-			if u, ok := ch.GetUsername(); ok && u != "" {
-				entry.Username = u
+			legacy, _ := ch.GetUsername()
+			extra, _ := ch.GetUsernames()
+			if un := activeUsername(legacy, extra); un != "" {
+				entry.Username = un
 				entry.Access = "public"
 			} else {
 				entry.Access = "private"
@@ -217,7 +219,9 @@ func populateEntrySnapshot(entry *CacheEntry, res *tg.ContactsResolvedPeer) {
 			if ln, ok := user.GetLastName(); ok {
 				entry.LastName = ln
 			}
-			if un, ok := user.GetUsername(); ok {
+			legacy, _ := user.GetUsername()
+			extra, _ := user.GetUsernames()
+			if un := activeUsername(legacy, extra); un != "" {
 				entry.Username = un
 			}
 			if ph, ok := user.GetPhone(); ok {
@@ -232,6 +236,23 @@ func populateEntrySnapshot(entry *CacheEntry, res *tg.ContactsResolvedPeer) {
 			return
 		}
 	}
+}
+
+// activeUsername returns the user-visible handle for a peer. Prefers the
+// legacy single Username field; if empty, falls back to the first Active
+// entry in the collectible-usernames list (tg.Username with Active=true) —
+// required for peers like @durov or @money whose primary handle has been
+// migrated to that array and whose legacy Username field is empty.
+func activeUsername(legacy string, list []tg.Username) string {
+	if legacy != "" {
+		return legacy
+	}
+	for _, u := range list {
+		if u.Active && u.Username != "" {
+			return u.Username
+		}
+	}
+	return ""
 }
 
 // peerTypeOf returns the string label for an InputPeerClass.

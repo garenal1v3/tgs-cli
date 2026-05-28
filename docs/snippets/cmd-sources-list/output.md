@@ -25,6 +25,7 @@
     }
   ],
   "total": 287,
+  "returned": 2,
   "cursor": "eyJvIjo1MCwiZCI6MH0"
 }
 ```
@@ -52,7 +53,8 @@ With `--with-stats`:
       }
     }
   ],
-  "total": 287
+  "total": 287,
+  "returned": 1
 }
 ```
 

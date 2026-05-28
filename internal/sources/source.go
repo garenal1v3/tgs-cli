@@ -73,10 +73,18 @@ type ListRequest struct {
 }
 
 // ListResult is the output of Service.List.
+//
+// Returned is len(Sources) — the count after --type filtering and --limit
+// trimming. Total is the unfiltered server-reported count for the folder(s)
+// walked. The pair lets scripts distinguish "no results because the filter
+// matched zero dialogs" (Returned=0 with non-zero Total) from "no results
+// because the account is empty" (Total=0) without separately re-reading
+// the array length.
 type ListResult struct {
-	Sources []Source `json:"sources"`
-	Total   int      `json:"total"`
-	Cursor  string   `json:"cursor,omitempty"`
+	Sources  []Source `json:"sources"`
+	Total    int      `json:"total"`
+	Returned int      `json:"returned"`
+	Cursor   string   `json:"cursor,omitempty"`
 }
 
 // InspectRequest is the input for Service.Inspect.
