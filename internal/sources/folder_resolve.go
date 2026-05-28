@@ -105,8 +105,10 @@ func findFolderFilter(filters []tg.DialogFilterClass, ref string) (tg.DialogFilt
 }
 
 // sourceKey returns the peerKey for a Source so it can be looked up against
-// indexByPeer. Source.ID uses Bot-API conventions: negative for channels
-// (-100...), negative for legacy chats, positive for users.
+// indexByPeer. Source.ID uses Bot-API conventions:
+//   - channels: s.ID = -1_000_000_000_000 - tg_channel_id, inverted here.
+//   - legacy groups: s.ID = -tg_chat_id, so -s.ID recovers chat_id.
+//   - users/bots: s.ID = tg_user_id (identity).
 func sourceKey(s Source) peerKey {
 	switch s.Type {
 	case "channel", "supergroup":

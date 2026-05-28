@@ -111,3 +111,43 @@ func TestResolveFolder_AmbiguousName(t *testing.T) {
 		t.Errorf("err = %q, want 'ambiguous'", err)
 	}
 }
+
+func TestResolveFolder_ByChatlistName(t *testing.T) {
+	api := &mockAPI{
+		getDialogs: func(_ context.Context, _ *tg.MessagesGetDialogsRequest) (tg.MessagesDialogsClass, error) {
+			ch := &tg.Channel{ID: 1, Title: "Ch", Broadcast: true}
+			ch.SetAccessHash(7)
+			return &tg.MessagesDialogs{
+				Dialogs: []tg.DialogClass{
+					&tg.Dialog{Peer: &tg.PeerChannel{ChannelID: 1}, TopMessage: 1},
+				},
+				Messages: []tg.MessageClass{&tg.Message{ID: 1, Date: 1700000000}},
+				Chats:    []tg.ChatClass{ch},
+			}, nil
+		},
+		getDialogFilters: func(_ context.Context) (*tg.MessagesDialogFilters, error) {
+			return &tg.MessagesDialogFilters{
+				Filters: []tg.DialogFilterClass{
+					&tg.DialogFilterChatlist{
+						ID:    7,
+						Title: tg.TextWithEntities{Text: "Shared Community"},
+						IncludePeers: []tg.InputPeerClass{
+							&tg.InputPeerChannel{ChannelID: 1, AccessHash: 7},
+						},
+					},
+				},
+			}, nil
+		},
+	}
+	s := New(api, nil, nil, nil, 0)
+	got, err := s.ResolveFolder(context.Background(), "shared community", false)
+	if err != nil {
+		t.Fatalf("ResolveFolder: %v", err)
+	}
+	if got.Folder.ID != 7 || got.Folder.Kind != "chatlist" {
+		t.Errorf("Folder = %+v, want id=7 kind=chatlist", got.Folder)
+	}
+	if len(got.Peers) != 1 {
+		t.Errorf("len(Peers) = %d, want 1", len(got.Peers))
+	}
+}
