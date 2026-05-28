@@ -51,6 +51,17 @@ func ParseInput(input string) (PeerInput, error) {
 		return pi, nil
 	}
 
+	// Explicit ID form `id:<n>`: cobra/pflag treats bare "-1001234567890" as
+	// a flag, so this is the CLI-friendly way to pass a numeric peer ID
+	// without needing the `--` separator.
+	if rest, ok := strings.CutPrefix(input, "id:"); ok {
+		id, err := strconv.ParseInt(rest, 10, 64)
+		if err != nil {
+			return PeerInput{}, fmt.Errorf("invalid id:<n> form: %q (want a base-10 integer)", input)
+		}
+		return PeerInput{Type: InputID, ID: id}, nil
+	}
+
 	// Phone: starts with +, followed by 7+ digits, no slash in string.
 	if strings.HasPrefix(input, "+") && !strings.Contains(input, "/") {
 		digits := input[1:]

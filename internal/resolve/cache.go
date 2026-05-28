@@ -13,11 +13,46 @@ import (
 var bucketPeers = []byte("peers")
 
 // CacheEntry represents a resolved peer stored in the cache.
+//
+// In addition to the routing fields (PeerType/ID/AccessHash) needed to build
+// an InputPeer, the entry carries a snapshot of cheap display fields (Title,
+// Username, MembersCount, …) captured at resolve time. This lets `tgs sources
+// inspect` produce a full Source on a cache hit without a fresh API round-trip.
 type CacheEntry struct {
 	PeerType   string `json:"peer_type"` // "user", "channel", "chat"
 	ID         int64  `json:"id"`
 	AccessHash int64  `json:"access_hash"`
 	ResolvedAt int64  `json:"resolved_at"` // unix timestamp
+
+	// SnapshotVersion identifies the schema of the snapshot fields below.
+	// 0 = legacy (no snapshot fields populated); >=1 = current schema.
+	// Loaders use this to detect entries cached before snapshot support and
+	// trigger a live refresh.
+	SnapshotVersion int `json:"snapshot_version,omitempty"`
+
+	// Snapshot fields (omitempty so older cached entries deserialise cleanly).
+	Title        string `json:"title,omitempty"`
+	Username     string `json:"username,omitempty"`
+	Access       string `json:"access,omitempty"` // "public" | "private"
+	MembersCount int    `json:"members_count,omitempty"`
+	Verified     bool   `json:"verified,omitempty"`
+	Scam         bool   `json:"scam,omitempty"`
+	Fake         bool   `json:"fake,omitempty"`
+	Restricted   bool   `json:"restricted,omitempty"`
+	HasTopics    bool   `json:"has_topics,omitempty"`
+	Gigagroup    bool   `json:"gigagroup,omitempty"`
+	Broadcast    bool   `json:"broadcast,omitempty"` // channel (true) vs supergroup (false)
+
+	// User/bot-specific snapshot fields.
+	FirstName string `json:"first_name,omitempty"`
+	LastName  string `json:"last_name,omitempty"`
+	Phone     string `json:"phone,omitempty"`
+	IsBot     bool   `json:"is_bot,omitempty"`
+	Deleted   bool   `json:"deleted,omitempty"`
+
+	// Subscribed captures whether the authenticated user was subscribed at the
+	// time of resolve (only meaningful for channels). nil = unknown.
+	Subscribed *bool `json:"subscribed,omitempty"`
 }
 
 // PeerCache is a BoltDB-backed cache for resolved Telegram peers.
