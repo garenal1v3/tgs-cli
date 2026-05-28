@@ -19,7 +19,8 @@ The `ref` argument identifies the target source. Supported formats:
 |---|---|---|
 | `@username` | `@durov` | Public username with `@` prefix |
 | `username` | `durov` | Public username without prefix |
-| Numeric ID | `-1001234567890` | Telegram peer ID |
+| `id:<n>` | `id:-1001234567890` | Telegram peer ID (recommended for negative IDs — pflag eats bare `-N` as a flag) |
+| Numeric ID | `12345` | Positive peer ID. For negative IDs use the `id:` form above, or insert `--` (e.g. `inspect -- -1001234567890`) |
 | Phone number | `+79001234567` | For contacts and your own account |
 | `-` or `@me` | `-` | Saved Messages (your personal chat) |
 
@@ -42,10 +43,12 @@ Inspect a channel by username:
 tgs sources inspect @durov
 ```
 
-Inspect a group by numeric ID:
+Inspect a group by numeric ID (use the `id:` form to avoid the CLI flag parser):
 
 ```bash
-tgs sources inspect -1009876543210
+tgs sources inspect id:-1009876543210
+# or with a literal `--` separator:
+tgs sources inspect -- -1009876543210
 ```
 
 Inspect your Saved Messages:
@@ -101,7 +104,7 @@ Returns a single JSON object with the full source shape. The `subscribed` field 
 }
 ```
 
-For unsubscribed channels, `subscribed` is `false` and `stats` is `null`.
+For unsubscribed public channels, `subscribed` is `false` and `stats` is omitted from the JSON entirely. Display fields (`title`, `username`, `access`, `members_count`, `description`, `verified`, …) are still populated from the public channel info.
 
 ### Additional fields (inspect only)
 
@@ -109,10 +112,14 @@ For unsubscribed channels, `subscribed` is `false` and `stats` is `null`.
 |---|---|---|
 | `subscribed` | bool | Whether your account is subscribed to this source |
 | `description` | string | Full description / about text |
-| `creation_date` | string | RFC3339 UTC timestamp of when the chat was created |
+| `creation_date` | string | RFC3339 UTC timestamp of when the chat/channel was created. Only set for channels/supergroups/groups — Telegram does not expose user registration dates |
 | `invite_link` | string | Primary invite link; present when available |
 
 Boolean fields (`verified`, `scam`, `fake`, `restricted`, `archived`, `pinned`, `saved`, `deleted`, `has_topics`, `gigagroup`) appear only when `true`.
+
+### Flag notes
+
+`--no-cache` disables the peer cache (the BoltDB at `~/.tgs/<profile>/peers.db`) so that `@username` resolves and any cached display snapshot are bypassed. `inspect` does not maintain a separate stats cache — that cache only affects `tgs sources list --with-stats`.
 
 ## See Also
 

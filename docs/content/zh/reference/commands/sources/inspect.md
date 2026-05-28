@@ -21,7 +21,8 @@ tgs sources inspect <ref> [flags]
 |---|---|---|
 | `@username` | `@durov` | 带 `@` 前缀的公开用户名 |
 | `username` | `durov` | 不带前缀的公开用户名 |
-| 数字 ID | `-1001234567890` | Telegram 对等体 ID |
+| `id:<n>` | `id:-1001234567890` | Telegram 对等体 ID（推荐用于负数 ID——pflag 会把裸 `-N` 当作旗标） |
+| 数字 ID | `12345` | 正数对等体 ID。对于负数请使用上面的 `id:` 形式，或插入 `--`（例如 `inspect -- -1001234567890`） |
 | 电话号码 | `+79001234567` | 用于联系人或您自己的账户 |
 | `-` 或 `@me` | `-` | 收藏夹（"Saved Messages"） |
 
@@ -44,10 +45,12 @@ tgs sources inspect <ref> [flags]
 tgs sources inspect @durov
 ```
 
-通过数字 ID 查看群组：
+通过数字 ID 查看群组（使用 `id:` 形式，避免 CLI 把负号当作旗标）：
 
 ```bash
-tgs sources inspect -1009876543210
+tgs sources inspect id:-1009876543210
+# 或使用 `--` 分隔符：
+tgs sources inspect -- -1009876543210
 ```
 
 查看收藏夹：
@@ -103,7 +106,7 @@ tgs sources inspect @golang --profile work
 }
 ```
 
-对于未订阅的频道，`subscribed` 为 `false`，`stats` 为 `null`。
+对于未订阅的公开频道，`subscribed` 为 `false`，且 `stats` 键从 JSON 中完全省略。显示字段（`title`、`username`、`access`、`members_count`、`description`、`verified` 等）仍会从公开频道信息中填充。
 
 ### 额外字段（仅限 inspect）
 
@@ -111,10 +114,14 @@ tgs sources inspect @golang --profile work
 |---|---|---|
 | `subscribed` | bool | 您的账户是否订阅了该来源 |
 | `description` | string | 完整描述/关于信息 |
-| `creation_date` | string | 聊天创建时间（RFC3339 UTC 时间戳） |
+| `creation_date` | string | 聊天/频道创建时间（RFC3339 UTC 时间戳）。仅对频道/超级群组/普通群组返回——Telegram 不公开用户注册日期 |
 | `invite_link` | string | 主要邀请链接；可用时存在 |
 
 布尔字段（`verified`、`scam`、`fake`、`restricted`、`archived`、`pinned`、`saved`、`deleted`、`has_topics`、`gigagroup`）仅在值为 `true` 时出现。
+
+### 旗标说明
+
+`--no-cache` 禁用 peer 缓存（位于 `~/.tgs/<profile>/peers.db` 的 BoltDB），跳过用户名解析缓存及展示字段快照。`inspect` 没有独立的统计缓存——该缓存只影响 `tgs sources list --with-stats`。
 
 ## 另请参阅
 

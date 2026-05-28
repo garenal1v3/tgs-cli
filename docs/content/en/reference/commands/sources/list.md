@@ -124,24 +124,38 @@ When `--with-stats` is set, each source also includes a `stats` object:
 | `description` | string | Bio or about text; only present with full info |
 | `has_comments` | bool | Channel has a linked discussion group; only present if `true` |
 | `linked_chat_id` | int | ID of the linked discussion group; only present if applicable |
+| `creation_date` | string | RFC3339 UTC timestamp of when a chat/channel was created; only present for channels/groups with `--with-stats` or via `inspect` |
+| `invite_link` | string | Primary invite link; present when available |
+| `first_name` | string | User/bot first name; omitted for channels/groups |
+| `last_name` | string | User last name; omitted if unset |
+| `phone` | string | E.164 phone digits (no `+`); omitted unless contact-visible |
 | `verified` | bool | Official verified account; only present if `true` |
 | `scam` | bool | Marked as scam by Telegram; only present if `true` |
 | `fake` | bool | Marked as fake by Telegram; only present if `true` |
 | `restricted` | bool | Restricted in some regions; only present if `true` |
+| `restricted_reason` | string | Free-form restriction reason; omitted if absent |
+| `deleted` | bool | Deleted user account; only present if `true` |
 | `archived` | bool | Dialog is archived; only present if `true` |
 | `pinned` | bool | Dialog is pinned; only present if `true` |
 | `saved` | bool | This is Saved Messages; only present if `true` |
 | `gigagroup` | bool | Broadcast group (gigagroup); only present if `true` |
 | `has_topics` | bool | Supergroup with forum topics; only present if `true` |
-| `unread_count` | int | Unread message count |
+| `unread_count` | int | Unread message count (always present, including `0`) |
 | `last_message` | object | `{id, date}` of the most recent message |
 | `stats` | object | Present only when `--with-stats` is set |
+| `stats_error` | string | Short Telegram error code (e.g. `CHANNEL_PRIVATE`) when stats fetch failed; omitted on success |
 
-The `cursor` field in the response is empty when there are no more results.
+The `cursor` field is **omitted from the JSON entirely** when there are no more results (it is not present with value `""`). Iterate with `jq -r '.cursor? // empty'` to terminate the loop cleanly.
 
 ### Performance note
 
-By default, `tgs sources list` is fast — it reads dialogs from your account list. Adding `--with-stats` triggers approximately 4 additional API calls per source to fetch full info and message statistics. For accounts with hundreds of dialogs, this can take several minutes. Stats for inactive sources (last message older than 7 days) are cached on disk and reused across runs.
+By default, `tgs sources list` is fast — it reads dialogs from your account list. Adding `--with-stats` triggers roughly 4 additional API calls per source: `channels.getFullChannel` / `messages.getFullChat` / `users.getFullUser` for the full info, `messages.search` for the total count, plus paginated `messages.getHistory` calls for the 24-hour count and the first message. For accounts with hundreds of dialogs the full run can take several minutes. Stats for inactive sources (last message older than 7 days) are cached on disk and reused across runs.
+
+### Stats accuracy
+
+- `total_messages` is the server-reported message count for the dialog.
+- `messages_24h` walks recent history (up to ~1000 messages) and counts those within the last 24 h; hyper-active peers are capped at that walking limit.
+- `first_message` is best-effort — for broadcast channels Telegram's API may return no oldest message, in which case the field is omitted.
 
 ## See Also
 

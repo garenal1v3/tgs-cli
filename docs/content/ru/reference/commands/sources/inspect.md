@@ -21,7 +21,8 @@ tgs sources inspect <ref> [flags]
 |---|---|---|
 | `@username` | `@durov` | Публичный username с префиксом `@` |
 | `username` | `durov` | Публичный username без префикса |
-| Числовой ID | `-1001234567890` | Telegram peer ID |
+| `id:<n>` | `id:-1001234567890` | Telegram peer ID (рекомендуется для отрицательных ID — pflag воспринимает голый `-N` как флаг) |
+| Числовой ID | `12345` | Положительный peer ID. Для отрицательных используйте форму `id:` выше или вставьте `--` (например `inspect -- -1001234567890`) |
 | Номер телефона | `+79001234567` | Для контактов и собственного аккаунта |
 | `-` или `@me` | `-` | «Избранное» ("Saved Messages") |
 
@@ -44,10 +45,12 @@ tgs sources inspect <ref> [flags]
 tgs sources inspect @durov
 ```
 
-Изучить группу по числовому ID:
+Изучить группу по числовому ID (используйте форму `id:`, чтобы CLI не съел минус как флаг):
 
 ```bash
-tgs sources inspect -1009876543210
+tgs sources inspect id:-1009876543210
+# или с разделителем `--`:
+tgs sources inspect -- -1009876543210
 ```
 
 Изучить своё «Избранное»:
@@ -103,7 +106,7 @@ tgs sources inspect @golang --profile work
 }
 ```
 
-Для каналов, на которые вы не подписаны, `subscribed` равно `false`, а `stats` — `null`.
+Для публичных каналов, на которые вы не подписаны, `subscribed` равно `false`, а ключ `stats` полностью отсутствует в JSON. Отображаемые поля (`title`, `username`, `access`, `members_count`, `description`, `verified`, …) при этом заполняются из публичной информации канала.
 
 ### Дополнительные поля (только в inspect)
 
@@ -111,10 +114,14 @@ tgs sources inspect @golang --profile work
 |---|---|---|
 | `subscribed` | bool | Подписан ли ваш аккаунт на этот источник |
 | `description` | string | Полное описание / «О чате» |
-| `creation_date` | string | UTC-таймштамп RFC3339 — дата создания чата |
+| `creation_date` | string | UTC-таймштамп RFC3339 — дата создания чата/канала. Возвращается только для каналов/супергрупп/групп — Telegram не отдаёт дату регистрации пользователей |
 | `invite_link` | string | Основная ссылка-приглашение; присутствует, если доступна |
 
 Булевы поля (`verified`, `scam`, `fake`, `restricted`, `archived`, `pinned`, `saved`, `deleted`, `has_topics`, `gigagroup`) присутствуют только если они равны `true`.
+
+### Замечания по флагам
+
+`--no-cache` отключает peer-кеш (BoltDB в `~/.tgs/<profile>/peers.db`), в обход кэша username-резолва и snapshot отображаемых полей. У `inspect` нет отдельного кеша статистики — он влияет только на `tgs sources list --with-stats`.
 
 ## Смотрите также
 

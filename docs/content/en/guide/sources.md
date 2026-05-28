@@ -36,8 +36,7 @@ The response is a JSON object with a `sources` array, a `total` count, and an op
 }
 ```
 
-> **`total`** is the server-reported total dialog count as returned by Telegram — it reflects all dialogs **before** any `--type` filtering is applied. Do not divide `total` by the length of the returned `sources` array to estimate pages; use `cursor` for pagination instead.
-```
+> **`total`** is the dialog count as known to your account — it reflects all dialogs **before** any `--type` filtering. The CLI guarantees `total >= len(sources)` (Telegram's own counter is sometimes stale; we bump it up to match what we actually returned). Use `cursor` for pagination — don't divide by `total`.
 
 ## Filtering by type
 
@@ -76,7 +75,9 @@ Each source in the response will then include a `stats` object:
 }
 ```
 
-**Performance note:** `--with-stats` triggers approximately 4 API calls per source. For large accounts this can take several minutes. Stats for inactive sources (last message older than 7 days) are cached on disk — subsequent runs reuse the cache until the source gets a new message.
+`first_message` is best-effort: for broadcast channels Telegram's MTProto API may return no oldest message at all (the field is then omitted). `total_messages` and `messages_24h` are always present.
+
+**Performance note:** `--with-stats` triggers roughly 4 API calls per source, and `messages_24h` paginates message history backwards (up to ~1000 messages) until it crosses the 24-hour cutoff — extremely active sources are capped at that value. For large accounts the full run can take several minutes. Stats for inactive sources (last message older than 7 days) are cached on disk and reused between runs.
 
 ## Inspecting a single source
 
@@ -86,14 +87,16 @@ Each source in the response will then include a `stats` object:
 # By username
 tgs sources inspect @durov
 
-# By numeric Telegram ID
-tgs sources inspect -1001234567890
+# By numeric Telegram ID — use the `id:` prefix (a bare "-1001234…" is eaten
+# by the CLI's flag parser; use `id:` or insert `--` to disambiguate).
+tgs sources inspect id:-1001234567890
+tgs sources inspect -- -1001234567890
 
 # Your Saved Messages
 tgs sources inspect -
 ```
 
-The response includes extra fields not available in `list`: `subscribed`, `description`, `creation_date`, and `invite_link`.
+The response includes extra fields not available in `list`: `subscribed`, `description`, `creation_date`, and `invite_link`. For broadcast channels, `creation_date` reflects when the channel was created; for users, it is omitted (Telegram does not expose user registration date).
 
 > **Numeric ID limitation:** Numeric IDs only resolve if the peer is already in your dialogs or in the local peer cache. To inspect a channel you haven't joined, use `@username` or `+phone` — not a numeric ID.
 
@@ -105,7 +108,7 @@ As long as you know the `@username`, you can inspect any public channel without 
 tgs sources inspect @somebigtechchannel
 ```
 
-`subscribed` will be `false` in the response, and `stats` will be `null`.
+`subscribed` will be `false` in the response, and `stats` will be omitted. Other display fields — `title`, `username`, `access`, `members_count`, `description`, `verified` — are populated from the public channel info.
 
 To skip fetching stats (faster):
 

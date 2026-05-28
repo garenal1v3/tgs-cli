@@ -126,24 +126,38 @@ tgs sources list --limit 50 --cursor "eyJvIjo1MCwiZCI6MH0"
 | `description` | string | 简介或关于信息；仅在完整信息下存在 |
 | `has_comments` | bool | 频道有关联讨论组；仅在为 `true` 时出现 |
 | `linked_chat_id` | int | 关联讨论组的 ID；仅在适用时出现 |
+| `creation_date` | string | 频道/群组创建时间的 UTC RFC3339 时间戳；仅对频道/群组在 `--with-stats` 或 `inspect` 时返回 |
+| `invite_link` | string | 主要邀请链接；可用时存在 |
+| `first_name` | string | 用户/机器人名；频道/群组省略 |
+| `last_name` | string | 用户姓氏；未设置时省略 |
+| `phone` | string | E.164 格式号码（无 `+`）；非联系人可见时省略 |
 | `verified` | bool | Telegram 官方认证账户；仅在为 `true` 时出现 |
 | `scam` | bool | 被 Telegram 标记为诈骗；仅在为 `true` 时出现 |
 | `fake` | bool | 被 Telegram 标记为虚假；仅在为 `true` 时出现 |
 | `restricted` | bool | 在某些地区受限；仅在为 `true` 时出现 |
+| `restricted_reason` | string | 自由格式的限制原因；不存在时省略 |
+| `deleted` | bool | 已删除的用户账户；仅在为 `true` 时出现 |
 | `archived` | bool | 对话已归档；仅在为 `true` 时出现 |
 | `pinned` | bool | 对话已置顶；仅在为 `true` 时出现 |
 | `saved` | bool | 这是"收藏夹"（"Saved Messages"）；仅在为 `true` 时出现 |
 | `gigagroup` | bool | 广播群组（gigagroup）；仅在为 `true` 时出现 |
 | `has_topics` | bool | 带论坛主题的超级群组；仅在为 `true` 时出现 |
-| `unread_count` | int | 未读消息数 |
+| `unread_count` | int | 未读消息数（始终存在，包括 `0`） |
 | `last_message` | object | 最近一条消息的 `{id, date}` |
 | `stats` | object | 仅在使用 `--with-stats` 时存在 |
+| `stats_error` | string | 获取统计失败时的简短 Telegram 错误码（例如 `CHANNEL_PRIVATE`）；成功时省略 |
 
-响应中的 `cursor` 字段为空时表示没有更多结果。
+当没有更多结果时，`cursor` 键**从 JSON 中完全省略**（不会以 `""` 形式出现）。请使用 `jq -r '.cursor? // empty'` 干净地终止循环。
 
 ### 性能说明
 
-默认情况下，`tgs sources list` 速度很快——直接从账户列表读取对话。添加 `--with-stats` 会为每个来源触发约 4 次额外的 API 调用，以获取完整信息和消息统计数据。对于有数百个对话的账户，这可能需要几分钟。非活跃来源（最后一条消息超过 7 天）的统计信息会缓存到磁盘，并在后续运行中复用。
+默认情况下，`tgs sources list` 速度很快——直接从账户列表读取对话。添加 `--with-stats` 会为每个来源额外触发约 4 次 API 调用：`channels.getFullChannel` / `messages.getFullChat` / `users.getFullUser` 获取完整信息，`messages.search` 获取总数，外加分页的 `messages.getHistory` 用于 24 小时计数和首条消息。对于有数百个对话的账户，整个运行可能需要几分钟。非活跃来源（最后一条消息超过 7 天）的统计信息会缓存到磁盘并在后续运行中复用。
+
+### 统计准确性
+
+- `total_messages` 是该对话的服务端消息计数。
+- `messages_24h` 向后翻阅最近的消息（最多约 1000 条）并统计 24 小时窗口内的消息；超活跃来源会被该步进上限截断。
+- `first_message` 是尽力而为：对于广播频道 Telegram API 可能不返回最早消息，此时该字段会被省略。
 
 ## 另请参阅
 

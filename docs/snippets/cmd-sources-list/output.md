@@ -44,6 +44,7 @@ With `--with-stats`:
       "verified": true,
       "unread_count": 0,
       "last_message": {"id": 4321, "date": "2026-05-28T08:15:00Z"},
+      "creation_date": "2015-08-26T10:00:00Z",
       "stats": {
         "total_messages": 12345,
         "messages_24h": 3,
@@ -51,7 +52,8 @@ With `--with-stats`:
       }
     }
   ],
-  "total": 287,
-  "cursor": ""
+  "total": 287
 }
 ```
+
+> The `cursor` key is omitted from the JSON when the listing is complete; it appears only when more pages are available.

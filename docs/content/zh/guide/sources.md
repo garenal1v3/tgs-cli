@@ -38,8 +38,7 @@ tgs sources list
 }
 ```
 
-> **`total`** 是 Telegram 返回的对话总数，反映应用 `--type` 筛选**之前**的所有对话数量。请勿用 `total` 除以返回的 `sources` 数组长度来估算页数——请使用 `cursor` 进行分页。
-```
+> **`total`** 是您账户中的对话总数（应用 `--type` 筛选**之前**）。CLI 保证 `total >= len(sources)`（Telegram 自身的计数器有时已过期，我们会把 `total` 抬升到实际返回的数量）。请勿用 `total` 除以数组长度估算页数——请使用 `cursor` 分页。
 
 ## 按类型筛选
 
@@ -78,7 +77,9 @@ tgs sources list --with-stats
 }
 ```
 
-**性能说明：** `--with-stats` 会为每个来源触发约 4 次 API 调用。对于大型账户，这可能需要几分钟。非活跃来源（最后一条消息超过 7 天）的统计信息会缓存到磁盘，在来源收到新消息之前，后续运行将复用缓存。
+`first_message` 是尽力而为的：对于广播频道，Telegram MTProto 有时不会返回最早的消息，此时该字段会被省略。`total_messages` 和 `messages_24h` 始终存在。
+
+**性能说明：** `--with-stats` 为每个来源大约触发 4 次 API 调用，且 `messages_24h` 会向后翻阅消息历史（最多约 1000 条）直到跨越 24 小时阈值——超活跃来源会被这个上限截断。对于大型账户，整个运行可能需要几分钟。非活跃来源（最后一条消息超过 7 天）的统计信息会缓存到磁盘，在来源收到新消息之前后续运行将复用缓存。
 
 ## 查看单个来源
 
@@ -88,14 +89,16 @@ tgs sources list --with-stats
 # 通过用户名
 tgs sources inspect @durov
 
-# 通过数字 Telegram ID
-tgs sources inspect -1001234567890
+# 通过数字 Telegram ID —— 使用 `id:` 前缀（裸 `-1001234…` 会被 CLI 的
+# 参数解析器当作旗标；用 `id:` 或插入 `--` 分隔符避免这一点）
+tgs sources inspect id:-1001234567890
+tgs sources inspect -- -1001234567890
 
 # 您的收藏夹（Saved Messages）
 tgs sources inspect -
 ```
 
-响应中包含 `list` 中没有的额外字段：`subscribed`、`description`、`creation_date`、`invite_link`。
+响应中包含 `list` 中没有的额外字段：`subscribed`、`description`、`creation_date`、`invite_link`。`creation_date` 仅对频道/超级群组/普通群组返回；对用户不返回（Telegram 不公开用户注册日期）。
 
 > **数字 ID 的限制：** 数字 ID 仅在该 peer 已存在于您的对话列表或本地 peer 缓存中时才能解析。若要查看您未加入的频道，请使用 `@username` 或 `+电话号码`，而非数字 ID。
 
@@ -107,7 +110,7 @@ tgs sources inspect -
 tgs sources inspect @somebigtechchannel
 ```
 
-响应中 `subscribed` 将为 `false`，`stats` 将为 `null`。
+响应中 `subscribed` 将为 `false`，且 `stats` 键将从 JSON 中完全省略。其他显示字段（`title`、`username`、`access`、`members_count`、`description`、`verified` 等）仍会从公开频道信息中填充。
 
 跳过统计信息以加快速度：
 
