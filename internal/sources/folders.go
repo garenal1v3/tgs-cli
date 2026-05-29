@@ -13,15 +13,16 @@ import (
 // (except DialogFilterDefault) with its contents resolved against the user's
 // dialog list.
 //
-// req.Archived = true includes archived dialogs in the source pool, so folders
-// without `exclude_archived` see them; the filter's own `exclude_archived`
-// flag still applies on top.
-func (s *Service) Folders(ctx context.Context, req FoldersRequest) (*FoldersResult, error) {
+// A folder is itself a view that can contain archived chats, so the source
+// pool ALWAYS includes archived dialogs (folder 1) in addition to the main
+// folder (0) — mirroring what the Telegram client shows when you open a
+// folder. The filter's own `exclude_archived` flag still applies on top.
+func (s *Service) Folders(ctx context.Context) (*FoldersResult, error) {
 	filters, err := s.fetchDialogFilters(ctx)
 	if err != nil {
 		return nil, err
 	}
-	dialogs, err := s.fetchAllDialogs(ctx, req.Archived)
+	dialogs, err := s.fetchAllDialogs(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +49,7 @@ func buildFolder(filter tg.DialogFilterClass, dialogs []sourceWithPeer, selfID i
 	case *tg.DialogFilterDefault:
 		return Folder{}, true
 	case *tg.DialogFilter:
-		chats := matchFolder(f, dialogs, selfID)
+		chats := matchFolderChats(f, dialogs, selfID)
 		emoticon, _ := f.GetEmoticon()
 		return Folder{
 			ID:         f.ID,
@@ -59,7 +60,7 @@ func buildFolder(filter tg.DialogFilterClass, dialogs []sourceWithPeer, selfID i
 			Chats:      chats,
 		}, false
 	case *tg.DialogFilterChatlist:
-		chats := matchFolder(f, dialogs, selfID)
+		chats := matchFolderChats(f, dialogs, selfID)
 		emoticon, _ := f.GetEmoticon()
 		return Folder{
 			ID:           f.ID,
@@ -72,6 +73,17 @@ func buildFolder(filter tg.DialogFilterClass, dialogs []sourceWithPeer, selfID i
 		}, false
 	}
 	return Folder{}, true
+}
+
+// matchFolderChats wraps matchFolder and guarantees a non-nil slice so the
+// JSON `chats` field is always an array (`[]`), never `null` — empty folders
+// would otherwise break consumers that iterate the array unconditionally.
+func matchFolderChats(filter tg.DialogFilterClass, dialogs []sourceWithPeer, selfID int64) []Source {
+	chats := matchFolder(filter, dialogs, selfID)
+	if chats == nil {
+		return []Source{}
+	}
+	return chats
 }
 
 // fetchDialogFilters wraps messages.getDialogFilters with retry.
@@ -93,18 +105,19 @@ func (s *Service) fetchDialogFilters(ctx context.Context) ([]tg.DialogFilterClas
 	return res.Filters, nil
 }
 
-// fetchAllDialogs walks all pages of getDialogs for folder 0 (and folder 1 if
-// archived) — mirroring the List() walk but unconditionally exhaustive.
-// The returned slice is the union of both folders' dialogs.
-func (s *Service) fetchAllDialogs(ctx context.Context, archived bool) ([]sourceWithPeer, error) {
+// fetchAllDialogs walks all pages of getDialogs for both the main folder (0)
+// and the archive folder (1) — mirroring the List() walk but unconditionally
+// exhaustive. The returned slice is the union of both folders' dialogs.
+//
+// The archive is always included: a user-defined folder is a cross-cutting
+// view that may contain archived chats, and the Telegram client shows them
+// when you open the folder. Folder resolution must reproduce that, so callers
+// don't get a misleadingly empty folder just because its chats are archived.
+func (s *Service) fetchAllDialogs(ctx context.Context) ([]sourceWithPeer, error) {
 	const pageSize = 100
 	var out []sourceWithPeer
 
-	folders := []int{0}
-	if archived {
-		folders = append(folders, 1)
-	}
-	for _, folderID := range folders {
+	for _, folderID := range []int{0, 1} {
 		var cur *Cursor
 		for {
 			page, next, _, err := s.fetchDialogs(ctx, cur, pageSize, folderID, s.selfID)

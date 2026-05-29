@@ -483,30 +483,46 @@ func (s *Service) listByFolder(ctx context.Context, req ListRequest) (*ListResul
 	if req.Cursor != "" {
 		return nil, errors.New("--cursor cannot be combined with --folder")
 	}
-	resolved, err := s.ResolveFolder(ctx, req.Folder, req.Archived)
+	// --archived is ignored in the folder branch: a folder view always
+	// includes its archived chats (ResolveFolder walks the archive too).
+	resolved, err := s.ResolveFolder(ctx, req.Folder)
 	if err != nil {
 		return nil, err
 	}
+	// Total is the unfiltered folder size (before --type / --limit), matching
+	// the documented contract: Returned narrows, Total does not.
+	total := len(resolved.Folder.Chats)
+
+	// Filter chats and their parallel peers in lockstep so --with-stats
+	// enrichment pairs each Source with its own InputPeer (a desynced filter
+	// would attach the wrong peer's stats).
 	chats := resolved.Folder.Chats
+	peers := resolved.Peers
 	if len(req.Types) > 0 {
 		set := make(map[string]bool, len(req.Types))
 		for _, k := range req.Types {
 			set[k] = true
 		}
-		filtered := chats[:0:0]
-		for _, c := range chats {
+		fc := chats[:0:0]
+		fp := make([]tg.InputPeerClass, 0, len(peers))
+		for i, c := range chats {
 			if set[c.Type] {
-				filtered = append(filtered, c)
+				fc = append(fc, c)
+				if i < len(peers) {
+					fp = append(fp, peers[i])
+				}
 			}
 		}
-		chats = filtered
+		chats, peers = fc, fp
 	}
-	total := len(chats)
 	if req.Limit > 0 && len(chats) > req.Limit {
 		chats = chats[:req.Limit]
+		if req.Limit < len(peers) {
+			peers = peers[:req.Limit]
+		}
 	}
 	if req.WithStats {
-		s.enrichSourcesWithStats(ctx, chats, resolved.Peers)
+		s.enrichSourcesWithStats(ctx, chats, peers)
 	}
 	return &ListResult{
 		Sources:  chats,

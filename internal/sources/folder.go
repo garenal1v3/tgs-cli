@@ -18,11 +18,6 @@ type Folder struct {
 	Chats        []Source `json:"chats"`
 }
 
-// FoldersRequest is the input for Service.Folders.
-type FoldersRequest struct {
-	Archived bool // include archived dialogs (folder 1) in the source pool
-}
-
 // FoldersResult is the output of Service.Folders.
 type FoldersResult struct {
 	Folders []Folder `json:"folders"`

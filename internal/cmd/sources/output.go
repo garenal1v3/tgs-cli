@@ -204,5 +204,8 @@ func writeFolderChatLine(w io.Writer, s sourcessvc.Source) {
 	if s.Pinned {
 		flags += "  pinned"
 	}
+	if s.Archived {
+		flags += "  archived"
+	}
 	_, _ = fmt.Fprintf(w, "  %-10s %s %s%s\n", s.Type, trunc(displayTitle(s), 30), username, flags)
 }

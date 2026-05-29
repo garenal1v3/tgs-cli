@@ -18,10 +18,9 @@ import (
 
 func newFoldersCmd() *cobra.Command {
 	var (
-		flagArchived bool
-		flagMaxWait  int
-		flagNoCache  bool
-		flagProfile  string
+		flagMaxWait int
+		flagNoCache bool
+		flagProfile string
 	)
 
 	cmd := &cobra.Command{
@@ -64,7 +63,7 @@ func newFoldersCmd() *cobra.Command {
 				resolver := resolve.NewResolver(api, peerCache)
 				svc := sourcessvc.New(api, resolver, retryPolicy, nil, selfID)
 
-				result, err := svc.Folders(ctx, sourcessvc.FoldersRequest{Archived: flagArchived})
+				result, err := svc.Folders(ctx)
 				if err != nil {
 					return err
 				}
@@ -73,7 +72,6 @@ func newFoldersCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().BoolVar(&flagArchived, "archived", false, "include archived dialogs in folder contents")
 	cmd.Flags().IntVar(&flagMaxWait, "max-wait", 60, "max seconds to wait on FLOOD_WAIT")
 	cmd.Flags().BoolVar(&flagNoCache, "no-cache", false, "disable peer cache")
 	cmd.Flags().StringVarP(&flagProfile, "profile", "p", "", "account profile name")

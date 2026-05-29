@@ -11,8 +11,10 @@ func TestFoldersCmd_FlagParsing(t *testing.T) {
 	if cmd.Use != "folders" {
 		t.Errorf("Use = %q", cmd.Use)
 	}
-	if cmd.Flag("archived") == nil {
-		t.Error("missing --archived")
+	// --archived was removed: a folder view always includes archived chats,
+	// so the flag would be a no-op (see feedback on folder/archive semantics).
+	if cmd.Flag("archived") != nil {
+		t.Error("--archived should not exist on 'sources folders'")
 	}
 	if cmd.Flag("max-wait") == nil {
 		t.Error("missing --max-wait")

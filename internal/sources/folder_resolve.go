@@ -16,7 +16,11 @@ import (
 //
 // DialogFilterDefault ("All chats") is intentionally NOT resolvable — it has
 // no rules and represents the absence of a folder filter.
-func (s *Service) ResolveFolder(ctx context.Context, ref string, archived bool) (*ResolvedFolder, error) {
+//
+// The folder's contents always include archived chats (see fetchAllDialogs):
+// a folder is a view that can span the archive, so scoping a command to a
+// folder must surface every chat in it regardless of archive state.
+func (s *Service) ResolveFolder(ctx context.Context, ref string) (*ResolvedFolder, error) {
 	ref = strings.TrimSpace(ref)
 	if ref == "" {
 		return nil, errors.New("folder ref is empty")
@@ -32,7 +36,7 @@ func (s *Service) ResolveFolder(ctx context.Context, ref string, archived bool) 
 		return nil, err
 	}
 
-	dialogs, err := s.fetchAllDialogs(ctx, archived)
+	dialogs, err := s.fetchAllDialogs(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -44,15 +48,26 @@ func (s *Service) ResolveFolder(ctx context.Context, ref string, archived bool) 
 		return nil, fmt.Errorf("folder not found: %q", ref)
 	}
 
-	// Collect InputPeers for fan-out, in the same order as Folder.Chats.
-	peers := make([]tg.InputPeerClass, 0, len(folder.Chats))
+	// Build Chats and their InputPeers in lockstep so callers can rely on the
+	// invariant folder.Chats[i] <-> peers[i] (fan-out commands pair each peer's
+	// result with the chat's display metadata). A chat without a resolvable
+	// InputPeer is dropped from BOTH — it can't be queried anyway, and keeping
+	// it would desync the two slices. In practice every chat sourced from the
+	// dialog list has a peer, so nothing is dropped.
 	index := indexByPeer(dialogs)
+	chats := make([]Source, 0, len(folder.Chats))
+	peers := make([]tg.InputPeerClass, 0, len(folder.Chats))
 	for _, src := range folder.Chats {
 		k := sourceKey(src)
-		if it, ok := index[k]; ok && it.Peer != nil {
-			peers = append(peers, it.Peer)
+		it, ok := index[k]
+		if !ok || it.Peer == nil {
+			continue
 		}
+		chats = append(chats, src)
+		peers = append(peers, it.Peer)
 	}
+	folder.Chats = chats
+	folder.ChatsCount = len(chats)
 
 	return &ResolvedFolder{Folder: folder, Peers: peers}, nil
 }
