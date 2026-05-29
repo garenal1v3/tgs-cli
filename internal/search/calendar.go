@@ -62,7 +62,18 @@ type PerChatCalendar struct {
 	Total   int              `json:"total"`
 }
 
+// DateCount is one aggregated date bucket across all chats in a fan-out.
+type DateCount struct {
+	Date  string `json:"date"`
+	Count int    `json:"count"`
+}
+
 // MultiCalendarResult is the response shape for multi-chat (folder) queries.
+// Chats holds the per-chat breakdown; Totals aggregates the message count per
+// date across every chat (newest date first); Total is the grand total across
+// all chats and dates.
 type MultiCalendarResult struct {
-	Chats []PerChatCalendar `json:"chats"`
+	Chats  []PerChatCalendar `json:"chats"`
+	Totals []DateCount       `json:"totals"`
+	Total  int               `json:"total"`
 }

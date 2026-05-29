@@ -112,12 +112,14 @@ func newGlobalCmd() *cobra.Command {
 					}
 					resolver := resolve.NewResolver(api, peerCache)
 					src := sources.New(api, resolver, retryPolicy, nil, selfID)
-					resolved, err := src.ResolveFolder(ctx, flagFolder, flagArchived)
+					// --archived is ignored when --folder is set: a folder view
+					// always spans the archive (ResolveFolder walks it).
+					resolved, err := src.ResolveFolder(ctx, flagFolder)
 					if err != nil {
 						return fmt.Errorf("resolve --folder: %w", err)
 					}
 					if len(resolved.Peers) == 0 {
-						return fmt.Errorf("folder %q is empty", flagFolder)
+						return fmt.Errorf("no chats to search: --folder %q resolved to no chats", flagFolder)
 					}
 					// Replace svc with one that has the resolver (search.NewService accepts nil for
 					// resolver in the global path, but Search may need it for peer-id round-trip).

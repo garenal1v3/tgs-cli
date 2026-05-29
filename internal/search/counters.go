@@ -129,7 +129,14 @@ type MultiCountersResult struct {
 	Totals []CounterEntry    `json:"totals"`
 }
 
-// ChatRef is a minimal chat identifier emitted in multi-chat results.
+// ChatRef identifies a chat in multi-chat (folder fan-out) results. ID is in
+// Bot-API form (negative for channels/supergroups) to match `sources list`
+// and the per-message `chat` field. Type/Title/Username mirror the source's
+// display fields and are omitted when unknown (e.g. a bare --chat peer that
+// was never resolved to full metadata).
 type ChatRef struct {
-	ID int64 `json:"id"`
+	ID       int64  `json:"id"`
+	Type     string `json:"type,omitempty"`
+	Title    string `json:"title,omitempty"`
+	Username string `json:"username,omitempty"`
 }

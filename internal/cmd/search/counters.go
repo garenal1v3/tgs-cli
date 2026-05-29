@@ -79,6 +79,7 @@ func newCountersCmd() *cobra.Command {
 				resolver := resolve.NewResolver(api, cache)
 				svc := search.NewService(api, resolver, retryPolicy)
 
+				var refs []search.ChatRef
 				var peers []tg.InputPeerClass
 				if flagChat != "" {
 					p, err := resolver.Resolve(ctx, flagChat)
@@ -86,6 +87,7 @@ func newCountersCmd() *cobra.Command {
 						return fmt.Errorf("resolve --chat: %w", err)
 					}
 					peers = append(peers, p)
+					refs = append(refs, chatRefFromPeer(p))
 				}
 				if flagFolder != "" {
 					meta, _ := client.LoadMeta()
@@ -94,14 +96,17 @@ func newCountersCmd() *cobra.Command {
 						selfID = meta.ID
 					}
 					src := sources.New(api, resolver, retryPolicy, nil, selfID)
-					resolved, err := src.ResolveFolder(ctx, flagFolder, false)
+					resolved, err := src.ResolveFolder(ctx, flagFolder)
 					if err != nil {
 						return fmt.Errorf("resolve --folder: %w", err)
 					}
-					peers = append(peers, resolved.Peers...)
+					for i, c := range resolved.Folder.Chats {
+						peers = append(peers, resolved.Peers[i])
+						refs = append(refs, chatRefFromSource(c))
+					}
 				}
 				if len(peers) == 0 {
-					return fmt.Errorf("no chats to query (--folder may be empty)")
+					return fmt.Errorf("no chats to query: --folder %q resolved to no chats and no --chat was given", flagFolder)
 				}
 
 				if len(peers) == 1 && flagFolder == "" {
@@ -117,10 +122,12 @@ func newCountersCmd() *cobra.Command {
 					return writeCountersResult(cmd.OutOrStdout(), outputFormat(cmd), result)
 				}
 
-				// Multi-chat: per-chat breakdown + totals.
+				// Multi-chat: per-chat breakdown + aggregated totals (kept in
+				// first-seen filter order so the output is stable, not map-random).
 				multi := &search.MultiCountersResult{}
 				totals := make(map[string]int)
-				for _, peer := range peers {
+				var totalOrder []string
+				for i, peer := range peers {
 					res, err := svc.GetCounters(ctx, search.CountersRequest{
 						Peer:    peer,
 						TopicID: flagTopic,
@@ -130,15 +137,18 @@ func newCountersCmd() *cobra.Command {
 						return fmt.Errorf("counters for peer %d: %w", peerID(peer), err)
 					}
 					multi.Chats = append(multi.Chats, search.PerChatCounters{
-						Chat:     search.ChatRef{ID: peerID(peer)},
+						Chat:     refs[i],
 						Counters: res.Counters,
 					})
 					for _, c := range res.Counters {
+						if _, seen := totals[c.Filter]; !seen {
+							totalOrder = append(totalOrder, c.Filter)
+						}
 						totals[c.Filter] += c.Count
 					}
 				}
-				for name, n := range totals {
-					multi.Totals = append(multi.Totals, search.CounterEntry{Filter: name, Count: n})
+				for _, name := range totalOrder {
+					multi.Totals = append(multi.Totals, search.CounterEntry{Filter: name, Count: totals[name]})
 				}
 				return writeMultiCountersResult(cmd.OutOrStdout(), outputFormat(cmd), multi)
 			})

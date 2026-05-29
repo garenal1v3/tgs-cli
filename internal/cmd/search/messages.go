@@ -113,7 +113,7 @@ func newMessagesCmd() *cobra.Command {
 						selfID = meta.ID
 					}
 					src := sources.New(api, resolver, retryPolicy, nil, selfID)
-					resolved, err := src.ResolveFolder(ctx, flagFolder, false)
+					resolved, err := src.ResolveFolder(ctx, flagFolder)
 					if err != nil {
 						return fmt.Errorf("resolve --folder: %w", err)
 					}
@@ -121,7 +121,7 @@ func newMessagesCmd() *cobra.Command {
 				}
 
 				if len(peers) == 0 {
-					return fmt.Errorf("no chats to search (--folder %q is empty and no --chat given)", flagFolder)
+					return fmt.Errorf("no chats to search: --folder %q resolved to no chats and no --chat was given", flagFolder)
 				}
 
 				if flagIncludeComments {

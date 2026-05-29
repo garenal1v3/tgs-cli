@@ -6,10 +6,34 @@ import (
 	"io"
 	"strings"
 
+	"github.com/gotd/td/tg"
 	"github.com/spf13/cobra"
 
 	"github.com/searchtgcli/tgs/internal/search"
+	"github.com/searchtgcli/tgs/internal/sources"
 )
+
+// chatRefFromSource builds a ChatRef from a resolved folder source. Source.ID
+// is already in Bot-API form, and Type/Title/Username carry the display data
+// fan-out results expose per chat.
+func chatRefFromSource(s sources.Source) search.ChatRef {
+	return search.ChatRef{ID: s.ID, Type: s.Type, Title: s.Title, Username: s.Username}
+}
+
+// chatRefFromPeer builds a ChatRef from a bare InputPeer (a --chat value with
+// no resolved metadata). ID is converted to Bot-API form; Type is only known
+// for legacy groups (InputPeerChat), and Title/Username stay empty.
+func chatRefFromPeer(p tg.InputPeerClass) search.ChatRef {
+	switch v := p.(type) {
+	case *tg.InputPeerChannel:
+		return search.ChatRef{ID: -1000000000000 - v.ChannelID}
+	case *tg.InputPeerChat:
+		return search.ChatRef{ID: -v.ChatID, Type: "group"}
+	case *tg.InputPeerUser:
+		return search.ChatRef{ID: v.UserID}
+	}
+	return search.ChatRef{}
+}
 
 func outputFormat(cmd *cobra.Command) string {
 	if f := cmd.Flag("output"); f != nil {
@@ -106,7 +130,7 @@ func writeCountersResult(w io.Writer, format string, result *search.CountersResu
 func writeMultiCountersResult(w io.Writer, format string, result *search.MultiCountersResult) error {
 	if format == "text" {
 		for _, pc := range result.Chats {
-			_, _ = fmt.Fprintf(w, "chat %d:\n", pc.Chat.ID)
+			_, _ = fmt.Fprintf(w, "%s:\n", chatLabel(pc.Chat))
 			for _, c := range pc.Counters {
 				_, _ = fmt.Fprintf(w, "  %-10s %d\n", c.Filter, c.Count)
 			}
@@ -123,14 +147,33 @@ func writeMultiCountersResult(w io.Writer, format string, result *search.MultiCo
 func writeMultiCalendarResult(w io.Writer, format string, result *search.MultiCalendarResult) error {
 	if format == "text" {
 		for _, pc := range result.Chats {
-			_, _ = fmt.Fprintf(w, "chat %d (total=%d):\n", pc.Chat.ID, pc.Total)
+			_, _ = fmt.Fprintf(w, "%s (total=%d):\n", chatLabel(pc.Chat), pc.Total)
 			for _, p := range pc.Periods {
 				_, _ = fmt.Fprintf(w, "  %s  count=%d  msg=%d..%d\n", p.Date, p.Count, p.MinMsgID, p.MaxMsgID)
 			}
 		}
+		if len(result.Totals) > 0 {
+			_, _ = fmt.Fprintln(w, "totals:")
+			for _, t := range result.Totals {
+				_, _ = fmt.Fprintf(w, "  %s  %d\n", t.Date, t.Count)
+			}
+			_, _ = fmt.Fprintf(w, "\ntotal: %d\n", result.Total)
+		}
 		return nil
 	}
 	return json.NewEncoder(w).Encode(result)
+}
+
+// chatLabel renders a ChatRef for text output: prefer title, then @username,
+// then the numeric id.
+func chatLabel(c search.ChatRef) string {
+	if c.Title != "" {
+		return c.Title
+	}
+	if c.Username != "" {
+		return "@" + c.Username
+	}
+	return fmt.Sprintf("#%d", c.ID)
 }
 
 func writeCalendarResult(w io.Writer, format string, result *search.CalendarResult) error {
