@@ -180,6 +180,8 @@ tgs sources folders
 
 The default "All chats" view is not included — only user-defined folders and shared chatlists appear in the output.
 
+A folder's contents always include its **archived** chats: a folder is a view that can span the archive, so `tgs sources folders` (and any command scoped with `--folder`) resolves every member regardless of archive state. There is no separate flag to opt in.
+
 Once you know which folder you want to work with, pass `--folder` to scope other commands to that folder. `--folder` accepts either a numeric folder ID or a case-insensitive folder name:
 
 ```bash

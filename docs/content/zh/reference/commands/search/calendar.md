@@ -75,14 +75,14 @@ tgs search calendar --folder Work --filter photo
 {
   "chats": [
     {
-      "chat": {"id": 1006503122, "type": "channel", "title": "Dev News"},
+      "chat": {"id": -1001006503122, "type": "channel", "title": "Dev News"},
       "periods": [
         {"date": "2026-05-12", "count": 1, "min_msg_id": 510, "max_msg_id": 510}
       ],
       "total": 1
     },
     {
-      "chat": {"id": 1009876543, "type": "supergroup", "title": "Team"},
+      "chat": {"id": -1001009876543, "type": "supergroup", "title": "Team"},
       "periods": [
         {"date": "2026-05-12", "count": 1, "min_msg_id": 200, "max_msg_id": 200},
         {"date": "2026-05-10", "count": 1, "min_msg_id": 198, "max_msg_id": 198}

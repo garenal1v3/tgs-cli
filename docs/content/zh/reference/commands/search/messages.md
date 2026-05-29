@@ -90,7 +90,7 @@ tgs search messages "bug" -c @dev -l 10 --cursor "eyJvIjo1MCwiZCI6MH0"
   "messages": [
     {
       "id": 520,
-      "chat": {"id": 1006503122, "type": "channel", "title": "Pavel Durov"},
+      "chat": {"id": -1001006503122, "type": "channel", "title": "Pavel Durov"},
       "date": "2026-05-23T13:26:07Z",
       "text": "WhatsApp encryption is a giant fraud...",
       "media": {"type": "webpage"},
@@ -120,7 +120,7 @@ tgs search messages "bug" -c @dev -l 10 --cursor "eyJvIjo1MCwiZCI6MH0"
 | 字段 | 类型 | 说明 |
 |---|---|---|
 | `id` | int | 聊天内的消息 ID |
-| `chat` | object | `{id, type, title?, username?}` — `type` 为 `channel`、`supergroup`、`group` 或 `private` |
+| `chat` | object | `{id, type, title?, username?}` — `id` 为 Bot API 形式（`channel`/`supergroup`/`group` 为负数，`private` 为正数），可直接传回 `--chat`；`type` 为 `channel`、`supergroup`、`group` 或 `private` |
 | `from` | object | 发送者信息（频道帖子省略，群组消息和评论包含） |
 | `date` | string | RFC3339 UTC 时间戳 |
 | `text` | string | 消息文本 |

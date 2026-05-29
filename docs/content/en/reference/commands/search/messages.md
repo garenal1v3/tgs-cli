@@ -88,7 +88,7 @@ Returns JSON with an array of matched messages and a `cursor` field for paginati
   "messages": [
     {
       "id": 520,
-      "chat": {"id": 1006503122, "type": "channel", "title": "Pavel Durov"},
+      "chat": {"id": -1001006503122, "type": "channel", "title": "Pavel Durov"},
       "date": "2026-05-23T13:26:07Z",
       "text": "WhatsApp encryption is a giant fraud...",
       "media": {"type": "webpage"},
@@ -118,7 +118,7 @@ Returns JSON with an array of matched messages and a `cursor` field for paginati
 | Field | Type | Notes |
 |---|---|---|
 | `id` | int | Message ID within the chat |
-| `chat` | object | `{id, type, title?, username?}` — `type` is one of `channel`, `supergroup`, `group`, `private` |
+| `chat` | object | `{id, type, title?, username?}` — `id` is in Bot-API form (negative for `channel`/`supergroup`/`group`, positive for `private`), so it feeds straight back into `--chat`; `type` is one of `channel`, `supergroup`, `group`, `private` |
 | `from` | object | Sender info (omitted for channel posts, present for group messages and comments) |
 | `date` | string | RFC3339 UTC timestamp |
 | `text` | string | Plain text of the message |

@@ -31,7 +31,7 @@ tgs search messages "查询关键词" -c @channel_name
   "messages": [
     {
       "id": 12345,
-      "chat": {"id": 1234567890, "type": "channel", "title": "频道名称"},
+      "chat": {"id": -1001234567890, "type": "channel", "title": "频道名称"},
       "from": {"id": 987654321, "first_name": "张", "last_name": "三"},
       "date": "2025-01-15T10:30:00Z",
       "text": "消息内容..."
@@ -235,7 +235,7 @@ tgs search counters --folder Crypto
 tgs search calendar --folder Crypto --filter photo
 ```
 
-`tgs` 会将文件夹解析为其成员聊天列表，然后对每个聊天执行扇出 (fan-out) 查询，结果合并方式与多聊天搜索相同。
+`tgs` 会将文件夹解析为其成员聊天列表，然后对每个聊天执行扇出 (fan-out) 查询，结果合并方式与多聊天搜索相同。解析出的聊天列表始终包含文件夹的**已归档**聊天——文件夹是一种可跨越归档区的视图——因此设置 `--folder` 时无需 `--archived`（且会被忽略）。
 
 > **关于 `tgs search global` 的说明：** 原先 `search global` 上的 `--folder` 参数（通过数字 ID 选择 Telegram 主文件夹或归档）已被 `--archived` 取代。`--folder` 参数现在在所有子命令中统一表示用户自定义文件夹。
 

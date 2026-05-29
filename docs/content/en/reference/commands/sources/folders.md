@@ -49,10 +49,11 @@ Chat entries inside `chats` follow the same field shape as
 
 ## Notes
 
-- For folders that include archived chats explicitly (e.g. via `include_peers`)
-  but you did NOT pass `--archived`, those archived chats will not appear —
-  the command did not walk the archive folder. Pass `--archived` for the full
-  picture.
+- A folder's contents **always include archived chats**. A Telegram folder is
+  a cross-cutting view that can span the archive, so the command walks both the
+  main and archive dialog lists and resolves every member — mirroring what you
+  see when you open the folder in the official client. There is no `--archived`
+  flag here: it would be redundant.
 - Folder contents are not paginated. The full list of folders is small
   (Telegram caps at ~30) and each folder's chats are returned in one response.
 

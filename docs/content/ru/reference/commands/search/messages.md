@@ -90,7 +90,7 @@ tgs search messages "bug" -c @dev -l 10 --cursor "eyJvIjo1MCwiZCI6MH0"
   "messages": [
     {
       "id": 520,
-      "chat": {"id": 1006503122, "type": "channel", "title": "Pavel Durov"},
+      "chat": {"id": -1001006503122, "type": "channel", "title": "Pavel Durov"},
       "date": "2026-05-23T13:26:07Z",
       "text": "WhatsApp encryption is a giant fraud...",
       "media": {"type": "webpage"},
@@ -120,7 +120,7 @@ tgs search messages "bug" -c @dev -l 10 --cursor "eyJvIjo1MCwiZCI6MH0"
 | Поле | Тип | Описание |
 |---|---|---|
 | `id` | int | ID сообщения внутри чата |
-| `chat` | object | `{id, type, title?, username?}` — `type` это `channel`, `supergroup`, `group` или `private` |
+| `chat` | object | `{id, type, title?, username?}` — `id` в форме Bot API (отрицательный для `channel`/`supergroup`/`group`, положительный для `private`), поэтому его можно сразу передать в `--chat`; `type` это `channel`, `supergroup`, `group` или `private` |
 | `from` | object | Отправитель (отсутствует для постов канала, присутствует для групп и комментариев) |
 | `date` | string | UTC-таймштамп в формате RFC3339 |
 | `text` | string | Текст сообщения |

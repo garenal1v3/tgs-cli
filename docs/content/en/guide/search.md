@@ -186,7 +186,7 @@ tgs search counters --folder Crypto
 tgs search calendar --folder Crypto --filter photo
 ```
 
-Under the hood, `tgs` resolves the folder to its member chats and fans the request out across all of them, merging results just like a multi-chat search.
+Under the hood, `tgs` resolves the folder to its member chats and fans the request out across all of them, merging results just like a multi-chat search. The resolved chat list always includes the folder's **archived** chats — a folder is a view that can span the archive — so `--archived` is not needed (and is ignored) when `--folder` is set.
 
 > **Note for `tgs search global`:** the old `--folder` flag on `search global` (which selected Telegram's main or archive folder by integer ID) has been replaced by `--archived`. The `--folder` flag now uniformly refers to user-defined folders across all subcommands.
 

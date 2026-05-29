@@ -80,14 +80,14 @@ When `--folder` is used, the output includes a per-chat breakdown and aggregated
 {
   "chats": [
     {
-      "chat": {"id": 1006503122, "type": "channel", "title": "Dev News"},
+      "chat": {"id": -1001006503122, "type": "channel", "title": "Dev News"},
       "counters": [
         {"filter": "photo", "count": 30},
         {"filter": "document", "count": 12}
       ]
     },
     {
-      "chat": {"id": 1009876543, "type": "supergroup", "title": "Team"},
+      "chat": {"id": -1001009876543, "type": "supergroup", "title": "Team"},
       "counters": [
         {"filter": "photo", "count": 68},
         {"filter": "document", "count": 41}
