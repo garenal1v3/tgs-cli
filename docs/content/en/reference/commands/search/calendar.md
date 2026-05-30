@@ -5,7 +5,7 @@ weight: 40
 
 # tgs search calendar
 
-Get message search results grouped by date for a specific chat and filter type.
+Get message search results grouped by date for one or more chats and a filter type.
 
 ## Usage
 
@@ -19,7 +19,8 @@ This command takes no positional arguments.
 
 | Flag | Short | Type | Default | Description |
 |------|-------|------|---------|-------------|
-| `--chat` | `-c` | string | | Chat to query (username, phone, or ID). **Required.** |
+| `--chat` | `-c` | string | | Chat to query (username, phone, or ID). Required unless `--folder` is set. |
+| `--folder` | | string | `""` | Query all chats inside this folder (id or name); results include per-chat arrays plus aggregated totals |
 | `--filter` | | string | | Message type filter (see [filter values](/en/reference/commands/search/messages/#filter-values)). **Required.** |
 | `--max-wait` | | int | `60` | Max seconds to wait on FLOOD_WAIT |
 | `--no-cache` | | bool | `false` | Disable peer resolution cache |
@@ -41,11 +42,17 @@ Get a calendar of shared documents in a group:
 tgs search calendar -c @dev_team --filter document
 ```
 
+Get a calendar of photos across all chats in a folder:
+
+```bash
+tgs search calendar --folder Work --filter photo
+```
+
 ## Output
 
 Returns JSON with an array of date entries and a `total` count.
 
-**JSON (default):**
+**JSON (default, single chat):**
 
 ```json
 {
@@ -55,6 +62,37 @@ Returns JSON with an array of date entries and a `total` count.
     {"date": "2025-12-23", "count": 1, "min_msg_id": 466, "max_msg_id": 466}
   ],
   "total": 98
+}
+```
+
+**JSON (with `--folder`, multi-chat):**
+
+When `--folder` is used, the output includes a per-chat array and aggregated totals:
+
+```json
+{
+  "chats": [
+    {
+      "chat": {"id": -1001006503122, "type": "channel", "title": "Dev News"},
+      "periods": [
+        {"date": "2026-05-12", "count": 1, "min_msg_id": 510, "max_msg_id": 510}
+      ],
+      "total": 1
+    },
+    {
+      "chat": {"id": -1001009876543, "type": "supergroup", "title": "Team"},
+      "periods": [
+        {"date": "2026-05-12", "count": 1, "min_msg_id": 200, "max_msg_id": 200},
+        {"date": "2026-05-10", "count": 1, "min_msg_id": 198, "max_msg_id": 198}
+      ],
+      "total": 2
+    }
+  ],
+  "totals": [
+    {"date": "2026-05-12", "count": 2},
+    {"date": "2026-05-10", "count": 1}
+  ],
+  "total": 3
 }
 ```
 

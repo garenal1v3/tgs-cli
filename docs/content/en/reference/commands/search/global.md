@@ -19,10 +19,11 @@ The `query` argument is required and specifies the text to search for.
 
 | Flag | Short | Type | Default | Description |
 |------|-------|------|---------|-------------|
-| `--channels-only` | | bool | `false` | Search only in channels |
-| `--groups-only` | | bool | `false` | Search only in groups |
-| `--users-only` | | bool | `false` | Search only in private chats |
-| `--folder` | | int | `0` | Search only in folder with this ID |
+| `--channels-only` | | bool | `false` | Search only in channels; incompatible with `--folder` |
+| `--groups-only` | | bool | `false` | Search only in groups; incompatible with `--folder` |
+| `--users-only` | | bool | `false` | Search only in private chats; incompatible with `--folder` |
+| `--archived` | | bool | `false` | Search in the archive folder (folder ID 1); ignored when `--folder` is set |
+| `--folder` | | string | `""` | Search only in this folder (id or name), archived chats included; incompatible with `--channels-only`, `--groups-only`, `--users-only` |
 | `--filter` | | string | | Message type filter (see [filter values](/en/reference/commands/search/messages/#filter-values)) |
 | `--after` | | string | | Only messages after date (YYYY-MM-DD or unix timestamp) |
 | `--before` | | string | | Only messages before date (YYYY-MM-DD or unix timestamp) |
@@ -53,11 +54,28 @@ Search with date filter and limited results:
 tgs search global "quarterly report" --after 2025-04-01 -l 20
 ```
 
-Search only in a specific folder:
+Search only in the archive:
 
 ```bash
-tgs search global "project update" --folder 3
+tgs search global "old project" --archived
 ```
+
+Search only in a named folder:
+
+```bash
+tgs search global "project update" --folder Work
+```
+
+## Notes
+
+When `--folder` is set, `tgs` resolves the folder's chat list and performs a
+fan-out — sending one `searchGlobal` request per chat, then merging the results.
+This is necessary because Telegram's `searchGlobal` API does not accept a peer
+list directly.
+
+`--folder` cannot be combined with `--channels-only`, `--groups-only`, or
+`--users-only`. The folder's chat list always includes its archived chats, so
+`--archived` has no effect when `--folder` is set and is silently ignored.
 
 ## Output
 
@@ -70,7 +88,7 @@ Same shape as [tgs search messages]({{< relref "/reference/commands/search/messa
   "messages": [
     {
       "id": 188791,
-      "chat": {"id": 1754252633, "type": "channel", "title": "News", "username": "newschannel"},
+      "chat": {"id": -1001754252633, "type": "channel", "title": "News", "username": "newschannel"},
       "date": "2026-05-27T10:51:40Z",
       "text": "...",
       "views": 360330,
@@ -78,7 +96,7 @@ Same shape as [tgs search messages]({{< relref "/reference/commands/search/messa
     },
     {
       "id": 67578,
-      "chat": {"id": 1069896405, "type": "supergroup", "title": "Tech Talk", "username": "techtalk"},
+      "chat": {"id": -1001069896405, "type": "supergroup", "title": "Tech Talk", "username": "techtalk"},
       "from": {"id": 1978176, "first_name": "Ilya", "username": "valkin"},
       "date": "2026-05-27T10:14:00Z",
       "text": "..."

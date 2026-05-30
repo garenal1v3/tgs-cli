@@ -21,10 +21,11 @@ tgs search global [query] [flags]
 
 | Флаг | Сокр. | Тип | По умолчанию | Описание |
 |------|-------|-----|--------------|----------|
-| `--channels-only` | | bool | `false` | Искать только в каналах |
-| `--groups-only` | | bool | `false` | Искать только в группах |
-| `--users-only` | | bool | `false` | Искать только в личных чатах |
-| `--folder` | | int | `0` | Искать только в папке с указанным ID |
+| `--channels-only` | | bool | `false` | Искать только в каналах; несовместим с `--folder` |
+| `--groups-only` | | bool | `false` | Искать только в группах; несовместим с `--folder` |
+| `--users-only` | | bool | `false` | Искать только в личных чатах; несовместим с `--folder` |
+| `--archived` | | bool | `false` | Искать в архиве (папка ID 1); игнорируется при `--folder` |
+| `--folder` | | string | `""` | Искать только в этой папке (id или имя), включая архивные чаты; несовместим с `--channels-only`, `--groups-only`, `--users-only` |
 | `--filter` | | string | | Фильтр по типу сообщения (см. [допустимые значения](/ru/reference/commands/search/messages/#допустимые-значения-фильтров)) |
 | `--after` | | string | | Только сообщения после даты (YYYY-MM-DD или unix timestamp) |
 | `--before` | | string | | Только сообщения до даты (YYYY-MM-DD или unix timestamp) |
@@ -55,11 +56,28 @@ tgs search global "breaking news" --channels-only
 tgs search global "quarterly report" --after 2025-04-01 -l 20
 ```
 
-Поиск в определенной папке:
+Поиск в архиве:
 
 ```bash
-tgs search global "project update" --folder 3
+tgs search global "old project" --archived
 ```
+
+Поиск в именованной папке:
+
+```bash
+tgs search global "project update" --folder Work
+```
+
+## Заметки
+
+При использовании `--folder` команда разворачивает список чатов папки и выполняет
+веерный запрос (fan-out) — по одному запросу `searchGlobal` на каждый чат с
+последующим слиянием результатов. Это необходимо, поскольку Telegram API
+`searchGlobal` не принимает список пиров напрямую.
+
+`--folder` нельзя сочетать с `--channels-only`, `--groups-only` и `--users-only`.
+Список чатов папки всегда включает её архивные чаты, поэтому `--archived` не
+влияет на результат при заданном `--folder` и молча игнорируется.
 
 ## Вывод
 
@@ -72,7 +90,7 @@ tgs search global "project update" --folder 3
   "messages": [
     {
       "id": 188791,
-      "chat": {"id": 1754252633, "type": "channel", "title": "News", "username": "newschannel"},
+      "chat": {"id": -1001754252633, "type": "channel", "title": "News", "username": "newschannel"},
       "date": "2026-05-27T10:51:40Z",
       "text": "...",
       "views": 360330,
@@ -80,7 +98,7 @@ tgs search global "project update" --folder 3
     },
     {
       "id": 67578,
-      "chat": {"id": 1069896405, "type": "supergroup", "title": "Tech Talk", "username": "techtalk"},
+      "chat": {"id": -1001069896405, "type": "supergroup", "title": "Tech Talk", "username": "techtalk"},
       "from": {"id": 1978176, "first_name": "Ilya", "username": "valkin"},
       "date": "2026-05-27T10:14:00Z",
       "text": "..."

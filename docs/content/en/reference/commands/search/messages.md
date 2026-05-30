@@ -19,7 +19,8 @@ The `query` argument is required and specifies the text to search for.
 
 | Flag | Short | Type | Default | Description |
 |------|-------|------|---------|-------------|
-| `--chat` | `-c` | string[] | | Chat to search (username, phone, ID; repeatable, comma-separated). **Required.** |
+| `--chat` | `-c` | string[] | | Chat to search (username, phone, ID; repeatable, comma-separated). Required unless `--folder` is set. |
+| `--folder` | | string | `""` | Search all chats inside this folder (id or name); peers are additive to any `--chat` values |
 | `--from` | `-f` | string | | Filter by sender (username, phone, or ID) |
 | `--filter` | | string | | Message type filter (see [filter values](#filter-values)) |
 | `--after` | | string | | Only messages after date (YYYY-MM-DD or unix timestamp) |
@@ -64,6 +65,12 @@ Search within a date range:
 tgs search messages "outage" -c @incidents --after 2025-01-01 --before 2025-06-01
 ```
 
+Search across all chats in a folder:
+
+```bash
+tgs search messages "announcement" --folder Work
+```
+
 Paginate through results:
 
 ```bash
@@ -81,7 +88,7 @@ Returns JSON with an array of matched messages and a `cursor` field for paginati
   "messages": [
     {
       "id": 520,
-      "chat": {"id": 1006503122, "type": "channel", "title": "Pavel Durov"},
+      "chat": {"id": -1001006503122, "type": "channel", "title": "Pavel Durov"},
       "date": "2026-05-23T13:26:07Z",
       "text": "WhatsApp encryption is a giant fraud...",
       "media": {"type": "webpage"},
@@ -111,7 +118,7 @@ Returns JSON with an array of matched messages and a `cursor` field for paginati
 | Field | Type | Notes |
 |---|---|---|
 | `id` | int | Message ID within the chat |
-| `chat` | object | `{id, type, title?, username?}` — `type` is one of `channel`, `supergroup`, `group`, `private` |
+| `chat` | object | `{id, type, title?, username?}` — `id` is in Bot-API form (negative for `channel`/`supergroup`/`group`, positive for `private`), so it feeds straight back into `--chat`; `type` is one of `channel`, `supergroup`, `group`, `private` |
 | `from` | object | Sender info (omitted for channel posts, present for group messages and comments) |
 | `date` | string | RFC3339 UTC timestamp |
 | `text` | string | Plain text of the message |

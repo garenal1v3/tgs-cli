@@ -7,7 +7,7 @@ weight: 30
 
 # tgs search counters
 
-Получение количества сообщений по типам (фото, видео, документы и т.д.) для конкретного чата.
+Получение количества сообщений по типам (фото, видео, документы и т.д.) для одного или нескольких чатов.
 
 ## Использование
 
@@ -21,7 +21,8 @@ tgs search counters [flags]
 
 | Флаг | Сокр. | Тип | По умолчанию | Описание |
 |------|-------|-----|--------------|----------|
-| `--chat` | `-c` | string | | Чат для запроса (username, телефон или ID). **Обязательный.** |
+| `--chat` | `-c` | string | | Чат для запроса (username, телефон или ID). Обязателен, если не задан `--folder`. |
+| `--folder` | | string | `""` | Запросить все чаты в этой папке (id или имя); вывод включает разбивку по чатам и агрегированные итоги |
 | `--topic` | | int | `0` | ID темы форума |
 | `--filters` | | string[] | | Типы фильтров для подсчета (через запятую; по умолчанию: все). См. [допустимые значения](/ru/reference/commands/search/messages/#допустимые-значения-фильтров) |
 | `--max-wait` | | int | `60` | Максимум секунд ожидания при FLOOD_WAIT |
@@ -44,11 +45,17 @@ tgs search counters -c @golang
 tgs search counters -c @mygroup --filters photo,video,document
 ```
 
+Счётчики для всех чатов в папке:
+
+```bash
+tgs search counters --folder Work --filters photo,document
+```
+
 ## Вывод
 
 Возвращает JSON с массивом `{filter, count}`.
 
-**JSON (по умолчанию):**
+**JSON (по умолчанию, один чат):**
 
 ```json
 {
@@ -63,6 +70,35 @@ tgs search counters -c @mygroup --filters photo,video,document
     {"filter": "music", "count": 0},
     {"filter": "round-video", "count": 0},
     {"filter": "geo", "count": 0}
+  ]
+}
+```
+
+**JSON (с `--folder`, несколько чатов):**
+
+При использовании `--folder` вывод содержит разбивку по чатам и агрегированные итоги:
+
+```json
+{
+  "chats": [
+    {
+      "chat": {"id": -1001006503122, "type": "channel", "title": "Dev News"},
+      "counters": [
+        {"filter": "photo", "count": 30},
+        {"filter": "document", "count": 12}
+      ]
+    },
+    {
+      "chat": {"id": -1001009876543, "type": "supergroup", "title": "Team"},
+      "counters": [
+        {"filter": "photo", "count": 68},
+        {"filter": "document", "count": 41}
+      ]
+    }
+  ],
+  "totals": [
+    {"filter": "photo", "count": 98},
+    {"filter": "document", "count": 53}
   ]
 }
 ```

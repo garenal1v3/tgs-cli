@@ -7,7 +7,7 @@ weight: 40
 
 # tgs search calendar
 
-Получение результатов поиска сообщений, сгруппированных по дате, для конкретного чата и типа фильтра.
+Получение результатов поиска сообщений, сгруппированных по дате, для одного или нескольких чатов и типа фильтра.
 
 ## Использование
 
@@ -21,7 +21,8 @@ tgs search calendar [flags]
 
 | Флаг | Сокр. | Тип | По умолчанию | Описание |
 |------|-------|-----|--------------|----------|
-| `--chat` | `-c` | string | | Чат для запроса (username, телефон или ID). **Обязательный.** |
+| `--chat` | `-c` | string | | Чат для запроса (username, телефон или ID). Обязателен, если не задан `--folder`. |
+| `--folder` | | string | `""` | Запросить все чаты в этой папке (id или имя); вывод включает массивы по каждому чату и агрегированные итоги |
 | `--filter` | | string | | Фильтр по типу сообщения (см. [допустимые значения](/ru/reference/commands/search/messages/#допустимые-значения-фильтров)). **Обязательный.** |
 | `--max-wait` | | int | `60` | Максимум секунд ожидания при FLOOD_WAIT |
 | `--no-cache` | | bool | `false` | Отключить кеш разрешения пиров |
@@ -43,11 +44,17 @@ tgs search calendar -c @travel_photos --filter photo
 tgs search calendar -c @dev_team --filter document
 ```
 
+Календарь фотографий по всем чатам в папке:
+
+```bash
+tgs search calendar --folder Work --filter photo
+```
+
 ## Вывод
 
 Возвращает JSON с массивом записей по датам и общим количеством `total`.
 
-**JSON (по умолчанию):**
+**JSON (по умолчанию, один чат):**
 
 ```json
 {
@@ -57,6 +64,37 @@ tgs search calendar -c @dev_team --filter document
     {"date": "2025-12-23", "count": 1, "min_msg_id": 466, "max_msg_id": 466}
   ],
   "total": 98
+}
+```
+
+**JSON (с `--folder`, несколько чатов):**
+
+При использовании `--folder` вывод содержит массивы по каждому чату и агрегированные итоги:
+
+```json
+{
+  "chats": [
+    {
+      "chat": {"id": -1001006503122, "type": "channel", "title": "Dev News"},
+      "periods": [
+        {"date": "2026-05-12", "count": 1, "min_msg_id": 510, "max_msg_id": 510}
+      ],
+      "total": 1
+    },
+    {
+      "chat": {"id": -1001009876543, "type": "supergroup", "title": "Team"},
+      "periods": [
+        {"date": "2026-05-12", "count": 1, "min_msg_id": 200, "max_msg_id": 200},
+        {"date": "2026-05-10", "count": 1, "min_msg_id": 198, "max_msg_id": 198}
+      ],
+      "total": 2
+    }
+  ],
+  "totals": [
+    {"date": "2026-05-12", "count": 2},
+    {"date": "2026-05-10", "count": 1}
+  ],
+  "total": 3
 }
 ```
 

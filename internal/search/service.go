@@ -33,7 +33,7 @@ type GlobalSearchRequest struct {
 	Filter       tg.MessagesFilterClass
 	After        int
 	Before       int
-	FolderID     int
+	Archived     bool
 	ChannelsOnly bool
 	GroupsOnly   bool
 	UsersOnly    bool
@@ -245,8 +245,8 @@ func (s *Service) SearchGlobal(ctx context.Context, req GlobalSearchRequest) (*S
 	if req.UsersOnly {
 		apiReq.SetUsersOnly(true)
 	}
-	if req.FolderID != 0 {
-		apiReq.SetFolderID(req.FolderID)
+	if req.Archived {
+		apiReq.SetFolderID(1)
 	}
 
 	if cur != nil {
@@ -342,20 +342,21 @@ func convertMessage(m *tg.Message, chatMap map[int64]ChatInfo, userMap map[int64
 		Text: m.Message,
 	}
 
-	// Chat info from PeerID.
+	// Chat info from PeerID. Lookups use the raw ID (chatMap key); emitted
+	// ChatInfo.ID is always Bot-API form.
 	if m.PeerID != nil {
 		pid := peerClassID(m.PeerID)
 		if ci, ok := chatMap[pid]; ok {
 			msg.Chat = ci
 		} else if _, isUser := m.PeerID.(*tg.PeerUser); isUser {
-			ci := ChatInfo{ID: pid, Type: "private"}
+			ci := ChatInfo{ID: pid, Type: "private"} // user IDs are already Bot-API form
 			if ui, ok := userMap[pid]; ok {
 				ci.Title = userDisplayName(ui)
 				ci.Username = ui.Username
 			}
 			msg.Chat = ci
 		} else {
-			msg.Chat = ChatInfo{ID: pid}
+			msg.Chat = ChatInfo{ID: botAPIPeerID(m.PeerID)}
 		}
 	}
 
@@ -508,20 +509,43 @@ func extractDocumentMedia(d *tg.Document) *MediaInfo {
 	return info
 }
 
-// buildChatMap builds a lookup map from ChatClass slices.
+// botAPIChannelID converts a raw Telegram channel ID to its Bot-API negative
+// form (-100xxxxxxxxxx). Mirrors sources.botAPIChannelID so chat IDs are
+// consistent across `sources` and `search` output and can be fed straight back
+// into --chat / --folder.
+func botAPIChannelID(id int64) int64 { return -1000000000000 - id }
+
+// botAPIPeerID converts a PeerClass to a Bot-API ID: users stay positive,
+// legacy groups become -id, channels/supergroups become -100…id.
+func botAPIPeerID(peer tg.PeerClass) int64 {
+	switch p := peer.(type) {
+	case *tg.PeerUser:
+		return p.UserID
+	case *tg.PeerChat:
+		return -p.ChatID
+	case *tg.PeerChannel:
+		return botAPIChannelID(p.ChannelID)
+	default:
+		return 0
+	}
+}
+
+// buildChatMap builds a lookup map from ChatClass slices. The map is keyed by
+// the RAW Telegram ID (matching peerClassID lookups), while each ChatInfo.ID
+// value is the Bot-API form for output consistency.
 func buildChatMap(chats []tg.ChatClass) map[int64]ChatInfo {
 	m := make(map[int64]ChatInfo, len(chats))
 	for _, c := range chats {
 		switch v := c.(type) {
 		case *tg.Chat:
 			m[v.ID] = ChatInfo{
-				ID:    v.ID,
+				ID:    -v.ID,
 				Type:  "group",
 				Title: v.Title,
 			}
 		case *tg.Channel:
 			ci := ChatInfo{
-				ID:    v.ID,
+				ID:    botAPIChannelID(v.ID),
 				Title: v.Title,
 			}
 			legacy, _ := v.GetUsername()

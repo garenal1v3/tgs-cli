@@ -21,7 +21,8 @@ tgs search messages [query] [flags]
 
 | Флаг | Сокр. | Тип | По умолчанию | Описание |
 |------|-------|-----|--------------|----------|
-| `--chat` | `-c` | string[] | | Чат для поиска (username, телефон, ID; можно указывать несколько раз или через запятую). **Обязательный.** |
+| `--chat` | `-c` | string[] | | Чат для поиска (username, телефон, ID; можно указывать несколько раз или через запятую). Обязателен, если не задан `--folder`. |
+| `--folder` | | string | `""` | Искать во всех чатах этой папки (id или имя); пиры папки суммируются с `--chat` |
 | `--from` | `-f` | string | | Фильтр по отправителю (username, телефон или ID) |
 | `--filter` | | string | | Фильтр по типу сообщения (см. [допустимые значения](#допустимые-значения-фильтров)) |
 | `--after` | | string | | Только сообщения после даты (YYYY-MM-DD или unix timestamp) |
@@ -66,6 +67,12 @@ tgs search messages "config" -c @mygroup --from @alice --filter document
 tgs search messages "outage" -c @incidents --after 2025-01-01 --before 2025-06-01
 ```
 
+Поиск по всем чатам в папке:
+
+```bash
+tgs search messages "announcement" --folder Work
+```
+
 Пагинация результатов:
 
 ```bash
@@ -83,7 +90,7 @@ tgs search messages "bug" -c @dev -l 10 --cursor "eyJvIjo1MCwiZCI6MH0"
   "messages": [
     {
       "id": 520,
-      "chat": {"id": 1006503122, "type": "channel", "title": "Pavel Durov"},
+      "chat": {"id": -1001006503122, "type": "channel", "title": "Pavel Durov"},
       "date": "2026-05-23T13:26:07Z",
       "text": "WhatsApp encryption is a giant fraud...",
       "media": {"type": "webpage"},
@@ -113,7 +120,7 @@ tgs search messages "bug" -c @dev -l 10 --cursor "eyJvIjo1MCwiZCI6MH0"
 | Поле | Тип | Описание |
 |---|---|---|
 | `id` | int | ID сообщения внутри чата |
-| `chat` | object | `{id, type, title?, username?}` — `type` это `channel`, `supergroup`, `group` или `private` |
+| `chat` | object | `{id, type, title?, username?}` — `id` в форме Bot API (отрицательный для `channel`/`supergroup`/`group`, положительный для `private`), поэтому его можно сразу передать в `--chat`; `type` это `channel`, `supergroup`, `group` или `private` |
 | `from` | object | Отправитель (отсутствует для постов канала, присутствует для групп и комментариев) |
 | `date` | string | UTC-таймштамп в формате RFC3339 |
 | `text` | string | Текст сообщения |

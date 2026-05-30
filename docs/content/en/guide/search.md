@@ -135,12 +135,12 @@ tgs search global "hey" --users-only
 
 These flags are mutually exclusive in practice -- Telegram applies the first one set.
 
-### Searching in a Folder
+### Searching in the archive
 
-If you organize chats into folders, search within a specific folder by its numeric ID:
+Pass `--archived` to restrict global search to chats in Telegram's built-in archive folder:
 
 ```bash
-tgs search global "update" --folder 3
+tgs search global "old thread" --archived
 ```
 
 Global search also supports `--filter`, `--after`, `--before`, `--limit`, and `--cursor`, same as `search messages`.
@@ -170,6 +170,27 @@ tgs search calendar -c @mychannel --filter photo
 ```
 
 Both `--chat` and `--filter` are required for calendar queries. The response contains a list of dates with the corresponding message count and a message ID range (`min_msg_id`, `max_msg_id`) for each date.
+
+## Filtering by folder
+
+All search subcommands accept `--folder <id|name>`, which scopes the search to the chats inside a user-defined Telegram folder. `--folder` accepts a numeric folder ID or a case-insensitive folder name:
+
+```bash
+# Search messages across every chat in the "Work" folder
+tgs search messages "release notes" --folder Work
+
+# Count media in chats inside the "Crypto" folder
+tgs search counters --folder Crypto
+
+# Calendar view, scoped to a folder
+tgs search calendar --folder Crypto --filter photo
+```
+
+Under the hood, `tgs` resolves the folder to its member chats and fans the request out across all of them, merging results just like a multi-chat search. The resolved chat list always includes the folder's **archived** chats — a folder is a view that can span the archive — so `--archived` is not needed (and is ignored) when `--folder` is set.
+
+> **Note for `tgs search global`:** the old `--folder` flag on `search global` (which selected Telegram's main or archive folder by integer ID) has been replaced by `--archived`. The `--folder` flag now uniformly refers to user-defined folders across all subcommands.
+
+To browse your folders and find IDs or exact names, use `tgs sources folders`.
 
 ## Cursor Pagination
 

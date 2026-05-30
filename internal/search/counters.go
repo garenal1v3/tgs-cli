@@ -114,3 +114,29 @@ func filterToName(f tg.MessagesFilterClass) string {
 		return ""
 	}
 }
+
+// PerChatCounters pairs a chat reference with its filter counts.
+type PerChatCounters struct {
+	Chat     ChatRef        `json:"chat"`
+	Counters []CounterEntry `json:"counters"`
+}
+
+// MultiCountersResult is the response shape when more than one chat is
+// queried (e.g. --folder fan-out). Chats holds per-chat breakdowns; Totals
+// holds aggregated counts across all chats.
+type MultiCountersResult struct {
+	Chats  []PerChatCounters `json:"chats"`
+	Totals []CounterEntry    `json:"totals"`
+}
+
+// ChatRef identifies a chat in multi-chat (folder fan-out) results. ID is in
+// Bot-API form (negative for channels/supergroups) to match `sources list`
+// and the per-message `chat` field. Type/Title/Username mirror the source's
+// display fields and are omitted when unknown (e.g. a bare --chat peer that
+// was never resolved to full metadata).
+type ChatRef struct {
+	ID       int64  `json:"id"`
+	Type     string `json:"type,omitempty"`
+	Title    string `json:"title,omitempty"`
+	Username string `json:"username,omitempty"`
+}

@@ -171,3 +171,41 @@ func trunc(s string, n int) string {
 	}
 	return string(r[:n-1]) + "…"
 }
+
+func writeFoldersResult(w io.Writer, format string, result *sourcessvc.FoldersResult) error {
+	if format == "text" {
+		_, _ = fmt.Fprintf(w, "%d folders\n", result.Total)
+		for _, f := range result.Folders {
+			_, _ = fmt.Fprintln(w)
+			emoticon := ""
+			if f.Emoticon != "" {
+				emoticon = " " + f.Emoticon
+			}
+			_, _ = fmt.Fprintf(w, "[%s] %s%s (id=%d) — %d chats\n", f.Kind, f.Title, emoticon, f.ID, f.ChatsCount)
+			for _, s := range f.Chats {
+				writeFolderChatLine(w, s)
+			}
+		}
+		return nil
+	}
+	return json.NewEncoder(w).Encode(result)
+}
+
+// writeFolderChatLine renders one chat row under a folder in the text view.
+func writeFolderChatLine(w io.Writer, s sourcessvc.Source) {
+	username := ""
+	if s.Username != "" {
+		username = "@" + s.Username
+	}
+	flags := ""
+	if s.UnreadCount > 0 {
+		flags += fmt.Sprintf("  unread=%d", s.UnreadCount)
+	}
+	if s.Pinned {
+		flags += "  pinned"
+	}
+	if s.Archived {
+		flags += "  archived"
+	}
+	_, _ = fmt.Fprintf(w, "  %-10s %s %s%s\n", s.Type, trunc(displayTitle(s), 30), username, flags)
+}

@@ -3,6 +3,7 @@ package sources
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/gotd/td/tg"
 )
@@ -10,12 +11,13 @@ import (
 // mockAPI implements the sources.API interface, with the relevant methods set
 // per test. Unused methods panic.
 type mockAPI struct {
-	getDialogs     func(ctx context.Context, req *tg.MessagesGetDialogsRequest) (tg.MessagesDialogsClass, error)
-	search         func(ctx context.Context, req *tg.MessagesSearchRequest) (tg.MessagesMessagesClass, error)
-	getHistory     func(ctx context.Context, req *tg.MessagesGetHistoryRequest) (tg.MessagesMessagesClass, error)
-	getFullChannel func(ctx context.Context, ch tg.InputChannelClass) (*tg.MessagesChatFull, error)
-	getFullChat    func(ctx context.Context, chatID int64) (*tg.MessagesChatFull, error)
-	getFullUser    func(ctx context.Context, u tg.InputUserClass) (*tg.UsersUserFull, error)
+	getDialogs       func(ctx context.Context, req *tg.MessagesGetDialogsRequest) (tg.MessagesDialogsClass, error)
+	search           func(ctx context.Context, req *tg.MessagesSearchRequest) (tg.MessagesMessagesClass, error)
+	getHistory       func(ctx context.Context, req *tg.MessagesGetHistoryRequest) (tg.MessagesMessagesClass, error)
+	getFullChannel   func(ctx context.Context, ch tg.InputChannelClass) (*tg.MessagesChatFull, error)
+	getFullChat      func(ctx context.Context, chatID int64) (*tg.MessagesChatFull, error)
+	getFullUser      func(ctx context.Context, u tg.InputUserClass) (*tg.UsersUserFull, error)
+	getDialogFilters func(ctx context.Context) (*tg.MessagesDialogFilters, error)
 }
 
 func (m *mockAPI) MessagesGetDialogs(ctx context.Context, req *tg.MessagesGetDialogsRequest) (tg.MessagesDialogsClass, error) {
@@ -35,6 +37,9 @@ func (m *mockAPI) MessagesGetFullChat(ctx context.Context, chatID int64) (*tg.Me
 }
 func (m *mockAPI) UsersGetFullUser(ctx context.Context, u tg.InputUserClass) (*tg.UsersUserFull, error) {
 	return m.getFullUser(ctx, u)
+}
+func (m *mockAPI) MessagesGetDialogFilters(ctx context.Context) (*tg.MessagesDialogFilters, error) {
+	return m.getDialogFilters(ctx)
 }
 
 func TestFetchDialogs_SinglePage(t *testing.T) {
@@ -117,5 +122,39 @@ func TestFetchDialogs_SliceWithCursor(t *testing.T) {
 	}
 	if nextCursor.OffsetID != 42 || nextCursor.OffsetPeerType != "channel" || nextCursor.OffsetPeerID != 222 {
 		t.Errorf("cursor = %+v", nextCursor)
+	}
+}
+
+func TestFetchDialogs_PopulatesContactAndMuted(t *testing.T) {
+	api := &mockAPI{
+		getDialogs: func(_ context.Context, _ *tg.MessagesGetDialogsRequest) (tg.MessagesDialogsClass, error) {
+			user := &tg.User{ID: 42, Contact: true}
+			user.SetFirstName("Carol")
+			user.SetAccessHash(99)
+			d := &tg.Dialog{
+				Peer:       &tg.PeerUser{UserID: 42},
+				TopMessage: 1,
+			}
+			d.NotifySettings.SetMuteUntil(int(time.Now().Add(24 * time.Hour).Unix()))
+			return &tg.MessagesDialogs{
+				Dialogs:  []tg.DialogClass{d},
+				Messages: []tg.MessageClass{&tg.Message{ID: 1, Date: 1700000000}},
+				Users:    []tg.UserClass{user},
+			}, nil
+		},
+	}
+	s := &Service{api: api}
+	items, _, _, err := s.fetchDialogs(context.Background(), nil, 100, 0, 0)
+	if err != nil {
+		t.Fatalf("fetchDialogs: %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("got %d items, want 1", len(items))
+	}
+	if !items[0].IsContact {
+		t.Errorf("IsContact = false, want true")
+	}
+	if !items[0].IsMuted {
+		t.Errorf("IsMuted = false, want true")
 	}
 }

@@ -45,6 +45,9 @@ func New(api API, resolver *resolve.Resolver, retryPolicy *retry.Policy, cache *
 // 1. The cursor carries the current folder so paginated calls resume in the
 // right place.
 func (s *Service) List(ctx context.Context, req ListRequest) (*ListResult, error) {
+	if req.Folder != "" {
+		return s.listByFolder(ctx, req)
+	}
 	cur, err := DecodeCursor(req.Cursor)
 	if err != nil {
 		return nil, err
@@ -469,6 +472,78 @@ func applyPayload(src *Source, p *CachedPayload) {
 	}
 	if p.Stats != nil {
 		src.Stats = p.Stats
+	}
+}
+
+// listByFolder is the --folder branch of List. It resolves the folder, then
+// applies --type and --limit locally to the folder's contents. --cursor is
+// not supported here (validated at the CLI layer; defensive guard returns an
+// error if it slips through).
+func (s *Service) listByFolder(ctx context.Context, req ListRequest) (*ListResult, error) {
+	if req.Cursor != "" {
+		return nil, errors.New("--cursor cannot be combined with --folder")
+	}
+	// --archived is ignored in the folder branch: a folder view always
+	// includes its archived chats (ResolveFolder walks the archive too).
+	resolved, err := s.ResolveFolder(ctx, req.Folder)
+	if err != nil {
+		return nil, err
+	}
+	// Total is the unfiltered folder size (before --type / --limit), matching
+	// the documented contract: Returned narrows, Total does not.
+	total := len(resolved.Folder.Chats)
+
+	// Filter chats and their parallel peers in lockstep so --with-stats
+	// enrichment pairs each Source with its own InputPeer (a desynced filter
+	// would attach the wrong peer's stats).
+	chats := resolved.Folder.Chats
+	peers := resolved.Peers
+	if len(req.Types) > 0 {
+		set := make(map[string]bool, len(req.Types))
+		for _, k := range req.Types {
+			set[k] = true
+		}
+		fc := chats[:0:0]
+		fp := make([]tg.InputPeerClass, 0, len(peers))
+		for i, c := range chats {
+			if set[c.Type] {
+				fc = append(fc, c)
+				if i < len(peers) {
+					fp = append(fp, peers[i])
+				}
+			}
+		}
+		chats, peers = fc, fp
+	}
+	if req.Limit > 0 && len(chats) > req.Limit {
+		chats = chats[:req.Limit]
+		if req.Limit < len(peers) {
+			peers = peers[:req.Limit]
+		}
+	}
+	if req.WithStats {
+		s.enrichSourcesWithStats(ctx, chats, peers)
+	}
+	return &ListResult{
+		Sources:  chats,
+		Total:    total,
+		Returned: len(chats),
+	}, nil
+}
+
+// enrichSourcesWithStats adapts the folder-branch chats (parallel arrays of
+// Source and InputPeer) to the existing enrichWithStats helper.
+func (s *Service) enrichSourcesWithStats(ctx context.Context, chats []Source, peers []tg.InputPeerClass) {
+	items := make([]sourceWithPeer, 0, len(chats))
+	for i := range chats {
+		if i >= len(peers) {
+			break
+		}
+		items = append(items, sourceWithPeer{Source: chats[i], Peer: peers[i]})
+	}
+	s.enrichWithStats(ctx, items)
+	for i := range items {
+		chats[i] = items[i].Source
 	}
 }
 

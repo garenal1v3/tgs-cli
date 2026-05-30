@@ -5,7 +5,7 @@ weight: 30
 
 # tgs search counters
 
-Get message counts grouped by filter type (photo, video, document, etc.) for a specific chat.
+Get message counts grouped by filter type (photo, video, document, etc.) for one or more chats.
 
 ## Usage
 
@@ -19,7 +19,8 @@ This command takes no positional arguments.
 
 | Flag | Short | Type | Default | Description |
 |------|-------|------|---------|-------------|
-| `--chat` | `-c` | string | | Chat to query (username, phone, or ID). **Required.** |
+| `--chat` | `-c` | string | | Chat to query (username, phone, or ID). Required unless `--folder` is set. |
+| `--folder` | | string | `""` | Query all chats inside this folder (id or name); results include per-chat breakdowns plus aggregated totals |
 | `--topic` | | int | `0` | Forum topic ID |
 | `--filters` | | string[] | | Filter types to count (comma-separated; default: all). See [filter values](/en/reference/commands/search/messages/#filter-values) |
 | `--max-wait` | | int | `60` | Max seconds to wait on FLOOD_WAIT |
@@ -42,11 +43,17 @@ Get counts for specific filter types:
 tgs search counters -c @mygroup --filters photo,video,document
 ```
 
+Get counts for all chats in a folder:
+
+```bash
+tgs search counters --folder Work --filters photo,document
+```
+
 ## Output
 
 Returns JSON with an array of `{filter, count}` entries.
 
-**JSON (default):**
+**JSON (default, single chat):**
 
 ```json
 {
@@ -61,6 +68,35 @@ Returns JSON with an array of `{filter, count}` entries.
     {"filter": "music", "count": 0},
     {"filter": "round-video", "count": 0},
     {"filter": "geo", "count": 0}
+  ]
+}
+```
+
+**JSON (with `--folder`, multi-chat):**
+
+When `--folder` is used, the output includes a per-chat breakdown and aggregated totals:
+
+```json
+{
+  "chats": [
+    {
+      "chat": {"id": -1001006503122, "type": "channel", "title": "Dev News"},
+      "counters": [
+        {"filter": "photo", "count": 30},
+        {"filter": "document", "count": 12}
+      ]
+    },
+    {
+      "chat": {"id": -1001009876543, "type": "supergroup", "title": "Team"},
+      "counters": [
+        {"filter": "photo", "count": 68},
+        {"filter": "document", "count": 41}
+      ]
+    }
+  ],
+  "totals": [
+    {"filter": "photo", "count": 98},
+    {"filter": "document", "count": 53}
   ]
 }
 ```

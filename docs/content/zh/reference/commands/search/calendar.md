@@ -7,7 +7,7 @@ weight: 40
 
 # tgs search calendar
 
-获取特定聊天和过滤器类型的按日期分组的消息搜索结果。
+获取一个或多个聊天按日期分组的消息搜索结果。
 
 ## 用法
 
@@ -21,7 +21,8 @@ tgs search calendar [flags]
 
 | 参数 | 缩写 | 类型 | 默认值 | 说明 |
 |------|------|------|--------|------|
-| `--chat` | `-c` | string | | 要查询的聊天（用户名、电话或 ID）。**必填。** |
+| `--chat` | `-c` | string | | 要查询的聊天（用户名、电话或 ID）。未设置 `--folder` 时必填。 |
+| `--folder` | | string | `""` | 查询此文件夹内的所有聊天（id 或名称）；输出包含按聊天分组的数组及汇总数据 |
 | `--filter` | | string | | 消息类型过滤器（参见[过滤器值](/zh/reference/commands/search/messages/#过滤器值)）。**必填。** |
 | `--max-wait` | | int | `60` | FLOOD_WAIT 最大等待秒数 |
 | `--no-cache` | | bool | `false` | 禁用对等体解析缓存 |
@@ -43,11 +44,17 @@ tgs search calendar -c @travel_photos --filter photo
 tgs search calendar -c @dev_team --filter document
 ```
 
+获取文件夹内所有聊天的照片日历：
+
+```bash
+tgs search calendar --folder Work --filter photo
+```
+
 ## 输出
 
 返回 JSON，包含日期条目数组和总数 `total`。
 
-**JSON（默认）：**
+**JSON（默认，单个聊天）：**
 
 ```json
 {
@@ -57,6 +64,37 @@ tgs search calendar -c @dev_team --filter document
     {"date": "2025-12-23", "count": 1, "min_msg_id": 466, "max_msg_id": 466}
   ],
   "total": 98
+}
+```
+
+**JSON（使用 `--folder`，多个聊天）：**
+
+使用 `--folder` 时，输出包含按聊天分组的数组及汇总数据：
+
+```json
+{
+  "chats": [
+    {
+      "chat": {"id": -1001006503122, "type": "channel", "title": "Dev News"},
+      "periods": [
+        {"date": "2026-05-12", "count": 1, "min_msg_id": 510, "max_msg_id": 510}
+      ],
+      "total": 1
+    },
+    {
+      "chat": {"id": -1001009876543, "type": "supergroup", "title": "Team"},
+      "periods": [
+        {"date": "2026-05-12", "count": 1, "min_msg_id": 200, "max_msg_id": 200},
+        {"date": "2026-05-10", "count": 1, "min_msg_id": 198, "max_msg_id": 198}
+      ],
+      "total": 2
+    }
+  ],
+  "totals": [
+    {"date": "2026-05-12", "count": 2},
+    {"date": "2026-05-10", "count": 1}
+  ],
+  "total": 3
 }
 ```
 

@@ -15,12 +15,14 @@ import (
 	"github.com/searchtgcli/tgs/internal/resolve"
 	"github.com/searchtgcli/tgs/internal/retry"
 	"github.com/searchtgcli/tgs/internal/search"
+	"github.com/searchtgcli/tgs/internal/sources"
 	"github.com/searchtgcli/tgs/internal/telegram"
 )
 
 func newMessagesCmd() *cobra.Command {
 	var (
 		flagChat            []string
+		flagFolder          string
 		flagFrom            string
 		flagFilter          string
 		flagAfter           string
@@ -43,8 +45,8 @@ func newMessagesCmd() *cobra.Command {
 			query := args[0]
 
 			chats := expandChats(flagChat)
-			if len(chats) == 0 {
-				return fmt.Errorf("at least one --chat/-c is required")
+			if len(chats) == 0 && flagFolder == "" {
+				return fmt.Errorf("at least one of --chat/-c or --folder is required")
 			}
 
 			filter, err := search.ParseFilter(flagFilter)
@@ -95,9 +97,31 @@ func newMessagesCmd() *cobra.Command {
 
 				resolver := resolve.NewResolver(api, cache)
 
-				peers, err := resolver.ResolveMulti(ctx, chats)
-				if err != nil {
-					return fmt.Errorf("resolve chats: %w", err)
+				var peers []tg.InputPeerClass
+				if len(chats) > 0 {
+					var err error
+					peers, err = resolver.ResolveMulti(ctx, chats)
+					if err != nil {
+						return fmt.Errorf("resolve chats: %w", err)
+					}
+				}
+
+				if flagFolder != "" {
+					meta, _ := client.LoadMeta()
+					var selfID int64
+					if meta != nil {
+						selfID = meta.ID
+					}
+					src := sources.New(api, resolver, retryPolicy, nil, selfID)
+					resolved, err := src.ResolveFolder(ctx, flagFolder)
+					if err != nil {
+						return fmt.Errorf("resolve --folder: %w", err)
+					}
+					peers = append(peers, resolved.Peers...)
+				}
+
+				if len(peers) == 0 {
+					return fmt.Errorf("no chats to search: --folder %q resolved to no chats and no --chat was given", flagFolder)
 				}
 
 				if flagIncludeComments {
@@ -136,6 +160,7 @@ func newMessagesCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringSliceVarP(&flagChat, "chat", "c", nil, "chat to search (username, phone, ID; repeatable, comma-separated)")
+	cmd.Flags().StringVar(&flagFolder, "folder", "", "search in chats of this folder (id or name); additive to --chat")
 	cmd.Flags().StringVarP(&flagFrom, "from", "f", "", "filter by sender (username, phone, or ID)")
 	cmd.Flags().StringVar(&flagFilter, "filter", "", "message type filter (photo, video, document, url, etc.)")
 	cmd.Flags().StringVar(&flagAfter, "after", "", "only messages after date (YYYY-MM-DD or unix timestamp)")
@@ -147,8 +172,6 @@ func newMessagesCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&flagNoCache, "no-cache", false, "disable peer resolution cache")
 	cmd.Flags().BoolVar(&flagIncludeComments, "include-comments", false, "also search the linked discussion group of each channel")
 	cmd.Flags().StringVarP(&flagProfile, "profile", "p", "", "account profile name")
-
-	_ = cmd.MarkFlagRequired("chat")
 
 	return cmd
 }

@@ -13,8 +13,10 @@ import (
 // sourceWithPeer pairs a Source with the InputPeerClass needed to re-call
 // Telegram on its behalf (used by --with-stats enrichment). Internal use only.
 type sourceWithPeer struct {
-	Source Source
-	Peer   tg.InputPeerClass
+	Source    Source
+	Peer      tg.InputPeerClass
+	IsContact bool
+	IsMuted   bool
 }
 
 // fetchDialogs makes one messages.getDialogs call and returns the converted
@@ -103,6 +105,15 @@ func (s *Service) fetchDialogs(ctx context.Context, cur *Cursor, limit, folderID
 			continue // unknown peer type
 		}
 		out = append(out, sourceWithPeer{Source: src, Peer: peer})
+		// last is safe: out has cap = len(dialogs) (pre-allocated above), so
+		// the append above never reallocates and the pointer stays valid.
+		last := &out[len(out)-1]
+		if pu, ok := d.Peer.(*tg.PeerUser); ok {
+			if u, found := userByID[pu.UserID]; found {
+				last.IsContact = u.Contact
+			}
+		}
+		last.IsMuted = isDialogMuted(d)
 		lastID = d.TopMessage
 		if mm := msgByID[d.TopMessage]; mm != nil {
 			lastDate = mm.Date
@@ -193,4 +204,15 @@ func cursorToInputPeer(c *Cursor) tg.InputPeerClass {
 	default:
 		return &tg.InputPeerEmpty{}
 	}
+}
+
+// isDialogMuted reports whether a dialog is muted right now per its
+// NotifySettings. MuteUntil = 0 means "not muted" (flag bit unset, or value explicitly 0); a unix timestamp in the
+// future means muted until that time. Telegram also uses MuteUntil = MaxInt32
+// (~2038) to represent "muted forever".
+func isDialogMuted(d *tg.Dialog) bool {
+	if mu, ok := d.NotifySettings.GetMuteUntil(); ok {
+		return int64(mu) > time.Now().Unix()
+	}
+	return false
 }

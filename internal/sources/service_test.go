@@ -875,6 +875,68 @@ func TestService_Inspect_NumericIDCacheMissReturnsError(t *testing.T) {
 	}
 }
 
+func TestService_List_WithFolderFiltersByFolder(t *testing.T) {
+	api := &mockAPI{
+		getDialogs: func(_ context.Context, _ *tg.MessagesGetDialogsRequest) (tg.MessagesDialogsClass, error) {
+			ch1 := &tg.Channel{ID: 1, Title: "InFolder", Broadcast: true}
+			ch1.SetAccessHash(1)
+			ch2 := &tg.Channel{ID: 2, Title: "NotInFolder", Broadcast: true}
+			ch2.SetAccessHash(2)
+			return &tg.MessagesDialogs{
+				Dialogs: []tg.DialogClass{
+					&tg.Dialog{Peer: &tg.PeerChannel{ChannelID: 1}, TopMessage: 10},
+					&tg.Dialog{Peer: &tg.PeerChannel{ChannelID: 2}, TopMessage: 20},
+				},
+				Messages: []tg.MessageClass{
+					&tg.Message{ID: 10, Date: 1700000000},
+					&tg.Message{ID: 20, Date: 1700000000},
+				},
+				Chats: []tg.ChatClass{ch1, ch2},
+			}, nil
+		},
+		getDialogFilters: func(_ context.Context) (*tg.MessagesDialogFilters, error) {
+			return &tg.MessagesDialogFilters{
+				Filters: []tg.DialogFilterClass{
+					&tg.DialogFilter{
+						ID:    7,
+						Title: tg.TextWithEntities{Text: "Mine"},
+						IncludePeers: []tg.InputPeerClass{
+							&tg.InputPeerChannel{ChannelID: 1, AccessHash: 1},
+						},
+					},
+				},
+			}, nil
+		},
+	}
+	s := New(api, nil, nil, nil, 0)
+	got, err := s.List(context.Background(), ListRequest{Folder: "Mine"})
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if len(got.Sources) != 1 || got.Sources[0].Title != "InFolder" {
+		t.Errorf("got = %+v, want only InFolder", got.Sources)
+	}
+	if got.Total != 1 || got.Returned != 1 {
+		t.Errorf("Total/Returned = %d/%d, want 1/1", got.Total, got.Returned)
+	}
+}
+
+func TestService_List_FolderNotFound(t *testing.T) {
+	api := &mockAPI{
+		getDialogs: func(_ context.Context, _ *tg.MessagesGetDialogsRequest) (tg.MessagesDialogsClass, error) {
+			return &tg.MessagesDialogs{}, nil
+		},
+		getDialogFilters: func(_ context.Context) (*tg.MessagesDialogFilters, error) {
+			return &tg.MessagesDialogFilters{Filters: []tg.DialogFilterClass{}}, nil
+		},
+	}
+	s := New(api, nil, nil, nil, 0)
+	_, err := s.List(context.Background(), ListRequest{Folder: "Nope"})
+	if err == nil || !strings.Contains(err.Error(), "folder not found") {
+		t.Errorf("err = %v, want folder-not-found", err)
+	}
+}
+
 func TestTelegramErrorCode(t *testing.T) {
 	tests := []struct {
 		name string

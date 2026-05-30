@@ -21,7 +21,8 @@ tgs search messages [query] [flags]
 
 | 参数 | 缩写 | 类型 | 默认值 | 说明 |
 |------|------|------|--------|------|
-| `--chat` | `-c` | string[] | | 要搜索的聊天（用户名、电话、ID；可重复使用，支持逗号分隔）。**必填。** |
+| `--chat` | `-c` | string[] | | 要搜索的聊天（用户名、电话、ID；可重复使用，支持逗号分隔）。未设置 `--folder` 时必填。 |
+| `--folder` | | string | `""` | 搜索此文件夹内的所有聊天（id 或名称）；文件夹中的对等体与 `--chat` 累加 |
 | `--from` | `-f` | string | | 按发送者筛选（用户名、电话或 ID） |
 | `--filter` | | string | | 消息类型过滤器（参见[过滤器值](#过滤器值)） |
 | `--after` | | string | | 仅返回此日期之后的消息（YYYY-MM-DD 或 unix 时间戳） |
@@ -66,6 +67,12 @@ tgs search messages "config" -c @mygroup --from @alice --filter document
 tgs search messages "outage" -c @incidents --after 2025-01-01 --before 2025-06-01
 ```
 
+搜索文件夹内所有聊天：
+
+```bash
+tgs search messages "announcement" --folder Work
+```
+
 分页浏览结果：
 
 ```bash
@@ -83,7 +90,7 @@ tgs search messages "bug" -c @dev -l 10 --cursor "eyJvIjo1MCwiZCI6MH0"
   "messages": [
     {
       "id": 520,
-      "chat": {"id": 1006503122, "type": "channel", "title": "Pavel Durov"},
+      "chat": {"id": -1001006503122, "type": "channel", "title": "Pavel Durov"},
       "date": "2026-05-23T13:26:07Z",
       "text": "WhatsApp encryption is a giant fraud...",
       "media": {"type": "webpage"},
@@ -113,7 +120,7 @@ tgs search messages "bug" -c @dev -l 10 --cursor "eyJvIjo1MCwiZCI6MH0"
 | 字段 | 类型 | 说明 |
 |---|---|---|
 | `id` | int | 聊天内的消息 ID |
-| `chat` | object | `{id, type, title?, username?}` — `type` 为 `channel`、`supergroup`、`group` 或 `private` |
+| `chat` | object | `{id, type, title?, username?}` — `id` 为 Bot API 形式（`channel`/`supergroup`/`group` 为负数，`private` 为正数），可直接传回 `--chat`；`type` 为 `channel`、`supergroup`、`group` 或 `private` |
 | `from` | object | 发送者信息（频道帖子省略，群组消息和评论包含） |
 | `date` | string | RFC3339 UTC 时间戳 |
 | `text` | string | 消息文本 |
