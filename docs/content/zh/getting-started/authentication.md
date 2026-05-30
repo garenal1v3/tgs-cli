@@ -71,4 +71,4 @@ tgs 会提示输入 Telegram 发送的验证码。如果启用了两步验证，
 
 ## 完整参数参考
 
-详见 [tgs login]({{< relref "/reference/commands/login" >}}) 和 [tgs logout]({{< relref "/reference/commands/logout" >}}) 的完整参数说明。
+详见 [tgs login]({{< relref "/reference/commands/auth/login" >}}) 和 [tgs logout]({{< relref "/reference/commands/auth/logout" >}}) 的完整参数说明。

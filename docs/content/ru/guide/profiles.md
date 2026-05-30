@@ -70,6 +70,6 @@ tgs ищет `.tgs.yaml`, поднимаясь по дереву директо�
 
 ## Полный справочник
 
-- [tgs profile]({{< relref "/reference/commands/profile" >}}) — подкоманды list, switch, delete
-- [tgs whoami]({{< relref "/reference/commands/whoami" >}}) — информация о текущем аккаунте
+- [tgs profile]({{< relref "/reference/commands/account/profile" >}}) — подкоманды list, switch, delete
+- [tgs whoami]({{< relref "/reference/commands/account/whoami" >}}) — информация о текущем аккаунте
 - [Переменные окружения]({{< relref "/reference/environment" >}}) — все поддерживаемые переменные окружения

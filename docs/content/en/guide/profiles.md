@@ -64,6 +64,6 @@ The `--profile` flag always takes precedence over `TGS_PROFILE`.
 
 ## Full Reference
 
-- [tgs profile]({{< relref "/reference/commands/profile" >}}) — list, switch, delete subcommands
-- [tgs whoami]({{< relref "/reference/commands/whoami" >}}) — show current account info
+- [tgs profile]({{< relref "/reference/commands/account/profile" >}}) — list, switch, delete subcommands
+- [tgs whoami]({{< relref "/reference/commands/account/whoami" >}}) — show current account info
 - [Environment Variables]({{< relref "/reference/environment" >}}) — all supported env vars

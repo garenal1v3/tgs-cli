@@ -18,6 +18,7 @@
 ## 特性
 
 - 搜索消息、聊天、频道——Telegram API 提供的一切
+- 通过 `tgs sources` 枚举并查看所有对话
 - 通过您的真实 Telegram 账户运行，而非机器人
 - 默认 JSON 输出——专为脚本和 AI 代理设计
 - 多账户配置，类似 AWS CLI

@@ -1,0 +1,3 @@
+```
+tgs sources list [flags]
+```
