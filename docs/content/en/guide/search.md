@@ -133,7 +133,7 @@ tgs search global "discussion" --groups-only
 tgs search global "hey" --users-only
 ```
 
-These flags are mutually exclusive in practice -- Telegram applies the first one set.
+These flags are mutually exclusive -- passing more than one at once is rejected with an error.
 
 ### Searching in the archive
 
@@ -243,7 +243,7 @@ All of these work in `--chat`, `--from`, and any other flag that accepts a peer 
 
 > **Note:** Invite links (`t.me/+hash`) are not supported for search.
 
-tgs caches resolved peers locally to avoid redundant API calls. Use `--no-cache` to bypass the cache if you suspect stale data.
+tgs caches resolved peers locally to avoid redundant API calls. Use `--no-cache` to bypass the cache if you suspect stale data. (`search global` resolves peers server-side and has no `--no-cache` flag.)
 
 ## Rate Limiting
 

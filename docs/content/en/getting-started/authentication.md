@@ -33,7 +33,7 @@ Interactive login with your phone number. Supports 2FA (cloud password).
 
 {{< snippet "auth/code-login.md" >}}
 
-tgs will prompt for the verification code sent by Telegram. If 2FA is enabled, it will also prompt for the cloud password.
+tgs will prompt for the verification code sent by Telegram. If 2FA is enabled, pass the cloud password via the `--password` flag — tgs does not prompt for it interactively.
 
 ### Non-Interactive Login (for AI agents)
 
@@ -47,7 +47,7 @@ Displays a QR code in the terminal. Scan it with the Telegram app on another dev
 
 {{< snippet "auth/qr-login.md" >}}
 
-After scanning, tgs completes the authentication automatically. If 2FA is enabled, you will be prompted for the cloud password.
+After scanning, tgs completes the authentication automatically. QR login does not support accounts with 2FA enabled — use the `code` method with `--password` for those.
 
 ## Login to a Specific Profile
 

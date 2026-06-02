@@ -32,7 +32,7 @@ On successful login:
 **JSON (default):**
 
 ```json
-{"profile":"default","user":{"id":261054642,"phone":"+79001234567","username":"alice","first_name":"Alice","last_name":"Doe"}}
+{"profile":"default","status":"logged_in","user":{"id":261054642,"phone":"+79001234567","username":"alice","first_name":"Alice","last_name":"Doe"}}
 ```
 
 **Text (`--output text`):**

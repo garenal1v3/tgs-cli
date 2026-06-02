@@ -23,7 +23,6 @@
       "id": 5,
       "kind": "chatlist",
       "title": "Go Community",
-      "has_my_invites": false,
       "chats_count": 8,
       "chats": []
     }

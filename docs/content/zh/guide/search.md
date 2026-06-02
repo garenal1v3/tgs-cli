@@ -133,7 +133,7 @@ tgs search global "discussion" --groups-only
 tgs search global "hey" --users-only
 ```
 
-这些标志在实际使用中是互斥的 —— Telegram 应用其中第一个被设置的标志。
+这些标志互斥 —— 同时传入多个会被拒绝并报错。
 
 ### 搜索归档区
 
@@ -243,7 +243,7 @@ tgs 接受多种格式来标识聊天、用户和群组：
 
 > **提示：** 邀请链接（`t.me/+hash`）不支持用于搜索。
 
-tgs 会在本地缓存已解析的 peer，以避免冗余的 API 调用。如果怀疑数据陈旧，使用 `--no-cache` 可绕过缓存。
+tgs 会在本地缓存已解析的 peer，以避免冗余的 API 调用。如果怀疑数据陈旧，使用 `--no-cache` 可绕过缓存。（`search global` 在服务器端解析 peer，没有 `--no-cache` 标志。）
 
 ## 速率限制处理
 
