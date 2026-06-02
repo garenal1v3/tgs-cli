@@ -17,10 +17,10 @@ Telegram search from your terminal
 ### Install
 
 ```bash
-brew install garenal1v3/tap/tgs
+brew install garenal1v3/tap/tgs-cli
 ```
 
-Or see [Installation]({{< relref "/getting-started" >}}) for other methods.
+Or see [Installation]({{< relref "/getting-started/installation" >}}) for other methods.
 
 ### Quick Start
 

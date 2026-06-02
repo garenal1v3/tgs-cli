@@ -7,8 +7,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/searchtgcli/tgs/internal/config"
-	"github.com/searchtgcli/tgs/internal/storage"
+	"github.com/garenal1v3/tgs-cli/internal/config"
+	"github.com/garenal1v3/tgs-cli/internal/storage"
 )
 
 const configFileName = ".tgs.yaml"

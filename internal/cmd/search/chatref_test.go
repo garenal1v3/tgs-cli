@@ -5,7 +5,7 @@ import (
 
 	"github.com/gotd/td/tg"
 
-	"github.com/searchtgcli/tgs/internal/sources"
+	"github.com/garenal1v3/tgs-cli/internal/sources"
 )
 
 func TestChatRefFromSource_CarriesDisplayFields(t *testing.T) {

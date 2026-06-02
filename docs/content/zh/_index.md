@@ -17,10 +17,10 @@ title: 介绍
 ### 安装
 
 ```bash
-brew install garenal1v3/tap/tgs
+brew install garenal1v3/tap/tgs-cli
 ```
 
-或查看[安装指南]({{< relref "/getting-started" >}})了解其他方式。
+或查看[安装指南]({{< relref "/getting-started/installation" >}})了解其他方式。
 
 ### 快速开始
 

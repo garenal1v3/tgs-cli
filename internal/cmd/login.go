@@ -9,10 +9,10 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/garenal1v3/tgs-cli/internal/auth"
+	"github.com/garenal1v3/tgs-cli/internal/profile"
+	"github.com/garenal1v3/tgs-cli/internal/telegram"
 	tg "github.com/gotd/td/tg"
-	"github.com/searchtgcli/tgs/internal/auth"
-	"github.com/searchtgcli/tgs/internal/profile"
-	"github.com/searchtgcli/tgs/internal/telegram"
 )
 
 var (

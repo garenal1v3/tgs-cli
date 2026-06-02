@@ -11,9 +11,9 @@ ARG DATE=unknown
 
 RUN CGO_ENABLED=0 go build \
     -ldflags "-s -w \
-      -X github.com/searchtgcli/tgs/internal/cmd.Version=${VERSION} \
-      -X github.com/searchtgcli/tgs/internal/cmd.Commit=${COMMIT} \
-      -X github.com/searchtgcli/tgs/internal/cmd.Date=${DATE}" \
+      -X github.com/garenal1v3/tgs-cli/internal/cmd.Version=${VERSION} \
+      -X github.com/garenal1v3/tgs-cli/internal/cmd.Commit=${COMMIT} \
+      -X github.com/garenal1v3/tgs-cli/internal/cmd.Date=${DATE}" \
     -o /tgs ./cmd/tgs/
 
 FROM alpine:3.20

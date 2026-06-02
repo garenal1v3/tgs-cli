@@ -18,9 +18,9 @@ builds:
       - arm64
     ldflags:
       - -s -w
-      - -X github.com/searchtgcli/tgs/internal/cmd.Version={{.Version}}
-      - -X github.com/searchtgcli/tgs/internal/cmd.Commit={{.ShortCommit}}
-      - -X github.com/searchtgcli/tgs/internal/cmd.Date={{.Date}}
+      - -X github.com/garenal1v3/tgs-cli/internal/cmd.Version={{.Version}}
+      - -X github.com/garenal1v3/tgs-cli/internal/cmd.Commit={{.ShortCommit}}
+      - -X github.com/garenal1v3/tgs-cli/internal/cmd.Date={{.Date}}
 
 archives:
   - format: tar.gz

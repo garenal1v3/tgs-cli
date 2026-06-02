@@ -25,6 +25,16 @@
 - 单一二进制文件，零依赖——随处运行
 - 瓶颈在于 Telegram API，而非应用本身
 
+## 安装
+
+```bash
+brew install garenal1v3/tap/tgs-cli
+```
+
+macOS 和 Linux 使用 Homebrew。macOS、Linux 和 Windows 的预编译二进制文件见[发布页面](https://github.com/garenal1v3/tgs-cli/releases)。
+
+👉 各操作系统的安装说明与从源码构建：**[安装文档](https://garenal1v3.github.io/tgs-cli/zh/getting-started/installation/)**。
+
 ## 文档
 
 📖 **[garenal1v3.github.io/tgs-cli](https://garenal1v3.github.io/tgs-cli/)** （即将上线）

@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/searchtgcli/tgs/internal/profile"
+	"github.com/garenal1v3/tgs-cli/internal/profile"
 )
 
 func newProfileCmd() *cobra.Command {

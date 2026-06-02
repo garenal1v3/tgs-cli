@@ -6,7 +6,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	sourcessvc "github.com/searchtgcli/tgs/internal/sources"
+	sourcessvc "github.com/garenal1v3/tgs-cli/internal/sources"
 )
 
 func TestTrunc_HandlesCyrillic(t *testing.T) {

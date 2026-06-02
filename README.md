@@ -22,6 +22,16 @@
 - Single binary, zero dependencies — runs anywhere
 - Bottleneck is Telegram API, never the app
 
+## Installation
+
+```bash
+brew install garenal1v3/tap/tgs-cli
+```
+
+Homebrew on macOS & Linux. Prebuilt binaries for macOS, Linux, and Windows live on the [releases page](https://github.com/garenal1v3/tgs-cli/releases).
+
+👉 Per-OS instructions and build-from-source: **[installation docs](https://garenal1v3.github.io/tgs-cli/getting-started/installation/)**.
+
 ## Documentation
 
 📖 **[garenal1v3.github.io/tgs-cli](https://garenal1v3.github.io/tgs-cli/)** (coming soon)

@@ -25,6 +25,16 @@
 - Один бинарник, ноль зависимостей — работает где угодно
 - Узкое место — Telegram API, не приложение
 
+## Установка
+
+```bash
+brew install garenal1v3/tap/tgs-cli
+```
+
+Homebrew на macOS и Linux. Готовые бинарники для macOS, Linux и Windows — на [странице релизов](https://github.com/garenal1v3/tgs-cli/releases).
+
+👉 Инструкции по каждой ОС и сборка из исходников: **[документация по установке](https://garenal1v3.github.io/tgs-cli/ru/getting-started/installation/)**.
+
 ## Документация
 
 📖 **[garenal1v3.github.io/tgs-cli](https://garenal1v3.github.io/tgs-cli/)** (скоро)

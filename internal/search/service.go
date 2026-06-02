@@ -10,8 +10,8 @@ import (
 
 	"github.com/gotd/td/tg"
 
-	"github.com/searchtgcli/tgs/internal/resolve"
-	"github.com/searchtgcli/tgs/internal/retry"
+	"github.com/garenal1v3/tgs-cli/internal/resolve"
+	"github.com/garenal1v3/tgs-cli/internal/retry"
 )
 
 // SearchRequest describes a search within one or more specific chats.

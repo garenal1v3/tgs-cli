@@ -9,8 +9,8 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/spf13/cobra"
 
-	"github.com/searchtgcli/tgs/internal/search"
-	"github.com/searchtgcli/tgs/internal/sources"
+	"github.com/garenal1v3/tgs-cli/internal/search"
+	"github.com/garenal1v3/tgs-cli/internal/sources"
 )
 
 // chatRefFromSource builds a ChatRef from a resolved folder source. Source.ID

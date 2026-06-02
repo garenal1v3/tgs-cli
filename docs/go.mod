@@ -1,4 +1,4 @@
-module github.com/searchtgcli/tgs/docs
+module github.com/garenal1v3/tgs-cli/docs
 
 go 1.26.3
 

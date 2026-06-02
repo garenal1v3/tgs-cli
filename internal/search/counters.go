@@ -7,7 +7,7 @@ import (
 
 	"github.com/gotd/td/tg"
 
-	"github.com/searchtgcli/tgs/internal/retry"
+	"github.com/garenal1v3/tgs-cli/internal/retry"
 )
 
 // CountersRequest describes a request to get message counts by filter type.
