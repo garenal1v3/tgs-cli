@@ -6,7 +6,7 @@ import (
 	"io"
 	"strings"
 
-	sourcessvc "github.com/searchtgcli/tgs/internal/sources"
+	sourcessvc "github.com/garenal1v3/tgs-cli/internal/sources"
 )
 
 func writeSourceList(w io.Writer, format string, result *sourcessvc.ListResult) error {

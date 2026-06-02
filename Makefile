@@ -2,9 +2,9 @@ VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev
 COMMIT  ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "none")
 DATE    ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 LDFLAGS  = -s -w \
-	-X github.com/searchtgcli/tgs/internal/cmd.Version=$(VERSION) \
-	-X github.com/searchtgcli/tgs/internal/cmd.Commit=$(COMMIT) \
-	-X github.com/searchtgcli/tgs/internal/cmd.Date=$(DATE)
+	-X github.com/garenal1v3/tgs-cli/internal/cmd.Version=$(VERSION) \
+	-X github.com/garenal1v3/tgs-cli/internal/cmd.Commit=$(COMMIT) \
+	-X github.com/garenal1v3/tgs-cli/internal/cmd.Date=$(DATE)
 
 GOLANGCI_LINT_VERSION ?= v2.12.2
 

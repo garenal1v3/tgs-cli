@@ -7,7 +7,7 @@ import (
 
 	"github.com/gotd/td/tg"
 
-	"github.com/searchtgcli/tgs/internal/retry"
+	"github.com/garenal1v3/tgs-cli/internal/retry"
 )
 
 // messages24hPageLimit caps how many history pages we walk to compute the

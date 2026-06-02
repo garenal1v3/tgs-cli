@@ -3,8 +3,6 @@ title: tgs sources list
 weight: 10
 ---
 
-> **注意：** 本文档可能落后于[英文版本](/en/reference/commands/sources/list/)。
-
 # tgs sources list
 
 枚举您账户中的所有 Telegram 对话——频道、超级群组、普通群组、用户和机器人。

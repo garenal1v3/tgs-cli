@@ -33,7 +33,7 @@ tgs 通过 MTProto 协议使用您的真实用户账户连接到 Telegram。每�
 
 {{< snippet "auth/code-login.md" >}}
 
-tgs 会提示输入 Telegram 发送的验证码。如果启用了两步验证，还会要求输入云密码。
+tgs 会提示输入 Telegram 发送的验证码。如果启用了两步验证，请通过 `--password` 标志传入云密码——tgs 不会交互式提示输入。
 
 ### 非交互式登录（适用于 AI 代理）
 
@@ -47,7 +47,7 @@ tgs 会提示输入 Telegram 发送的验证码。如果启用了两步验证，
 
 {{< snippet "auth/qr-login.md" >}}
 
-扫描后 tgs 会自动完成认证。如果启用了两步验证，将提示输入云密码。
+扫描后 tgs 会自动完成认证。二维码登录不支持启用了两步验证的账户——对于这类账户请使用 `code` 方式并配合 `--password`。
 
 ## 登录到指定配置文件
 

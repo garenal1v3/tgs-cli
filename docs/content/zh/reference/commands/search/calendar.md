@@ -3,8 +3,6 @@ title: tgs search calendar
 weight: 40
 ---
 
-> **注意：** 本文档可能落后于[英文版本](/en/reference/commands/search/calendar/)。
-
 # tgs search calendar
 
 获取一个或多个聊天按日期分组的消息搜索结果。

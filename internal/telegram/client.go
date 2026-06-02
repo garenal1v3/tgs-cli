@@ -13,8 +13,8 @@ import (
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/tg"
 
-	"github.com/searchtgcli/tgs/internal/config"
-	"github.com/searchtgcli/tgs/internal/storage"
+	"github.com/garenal1v3/tgs-cli/internal/config"
+	"github.com/garenal1v3/tgs-cli/internal/storage"
 )
 
 var (

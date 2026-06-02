@@ -3,8 +3,6 @@ title: 来源
 weight: 40
 ---
 
-> **注意：** 本文档可能落后于[英文版本](/en/guide/sources/)。
-
 # 来源
 
 `tgs sources` 让您枚举并查看账户中的 Telegram 对话——频道、超级群组、普通群组、用户和机器人。所有输出均为 JSON 格式，可直接通过 `jq` 处理或提供给 AI 代理。
@@ -87,7 +85,7 @@ tgs sources list --with-stats
 
 `first_message` 是尽力而为的：对于广播频道，Telegram MTProto 有时不会返回最早的消息，此时该字段会被省略。`total_messages` 和 `messages_24h` 始终存在。
 
-**性能说明：** `--with-stats` 为每个来源大约触发 4 次 API 调用，且 `messages_24h` 会向后翻阅消息历史（最多约 1000 条）直到跨越 24 小时阈值——超活跃来源会被这个上限截断。对于大型账户，整个运行可能需要几分钟。非活跃来源（最后一条消息超过 7 天）的统计信息会缓存到磁盘，在来源收到新消息之前后续运行将复用缓存。
+**性能说明：** `--with-stats` 为每个来源大约触发 4 次 API 调用，且 `messages_24h` 会向后翻阅消息历史（最多约 1000 条）直到跨越 24 小时阈值——超活跃来源会被这个上限截断。对于大型账户，整个运行可能需要几分钟。非活跃来源（最后一条消息超过 7 天）的统计信息会缓存到磁盘，并在多次运行之间复用。
 
 ## 查看单个来源
 
@@ -109,7 +107,7 @@ tgs sources inspect --no-stats -- -1001234567890
 tgs sources inspect -
 ```
 
-响应中包含 `list` 中没有的额外字段：`subscribed`、`description`、`creation_date`、`invite_link`。`creation_date` 仅对频道/超级群组/普通群组返回；对用户不返回（Telegram 不公开用户注册日期）。
+响应中包含 `list` 中没有的额外字段：`subscribed`、`description`、`creation_date`、`invite_link`。对于广播频道，`creation_date` 反映频道的创建时间；对于用户，该字段会被省略（Telegram 不公开用户注册日期）。
 
 > **数字 ID 的限制：** 数字 ID 仅在该 peer 此前通过 `@username` 或 `+电话号码` 被解析过（这样会把 access_hash 写入本地 peer 缓存）后才能使用。普通的 `tgs sources list` **不会**写入 peer 缓存。如果数字 ID 的 inspect 报错 "peer is not in the local cache"，请先执行一次 `inspect @<username>` 或 `+<phone>`，再用 `id:<n>` 重试。
 
@@ -194,7 +192,7 @@ tgs sources list --folder Crypto
 tgs sources list --folder 3
 ```
 
-如需了解如何在搜索命令中使用 `--folder`，请参阅搜索指南中的[按文件夹筛选](#按文件夹筛选)部分。
+如需了解如何在搜索命令中使用 `--folder`，请参阅搜索指南中的[按文件夹筛选]({{< relref "/guide/search#按文件夹筛选" >}})部分。
 
 ## 完整参考
 

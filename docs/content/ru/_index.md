@@ -17,10 +17,10 @@ title: Введение
 ### Установка
 
 ```bash
-brew install garenal1v3/tap/tgs
+brew install garenal1v3/tap/tgs-cli
 ```
 
-Или смотрите [Установку]({{< relref "/getting-started" >}}) для других способов.
+Или смотрите [Установку]({{< relref "/getting-started/installation" >}}) для других способов.
 
 ### Быстрый старт
 

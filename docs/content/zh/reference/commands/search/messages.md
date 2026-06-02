@@ -3,8 +3,6 @@ title: tgs search messages
 weight: 10
 ---
 
-> **注意：** 本文档可能落后于[英文版本](/en/reference/commands/search/messages/)。
-
 # tgs search messages
 
 在一个或多个聊天、频道或群组中搜索消息。
@@ -113,7 +111,10 @@ tgs search messages "bug" -c @dev -l 10 --cursor "eyJvIjo1MCwiZCI6MH0"
 
 ```
 [2026-05-23 13:26:07] Pavel Durov: WhatsApp encryption is a giant fraud... [👁 1128733 ↻ 10748 💬 540 👍 8412 🔥 2103 ❤ 991]
+[2026-05-23 14:02:11] Go Talks | @rob: generics landed in 1.18 [💬 4]
 ```
+
+每行的格式为 `[日期] 会话: 文本`（频道帖子），或当消息有独立发送者（群组、超级群组）时为 `[日期] 会话 | 作者: 文本`。如有反应和查看计数，会以方括号附加在行尾。
 
 ### 消息字段
 

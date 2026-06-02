@@ -3,8 +3,6 @@ title: tgs search global
 weight: 20
 ---
 
-> **Примечание:** Эта документация может отставать от [английской версии](/en/reference/commands/search/global/).
-
 # tgs search global
 
 Глобальный поиск сообщений по всем чатам, каналам и группам.

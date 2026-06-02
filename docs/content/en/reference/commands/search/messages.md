@@ -111,7 +111,10 @@ Returns JSON with an array of matched messages and a `cursor` field for paginati
 
 ```
 [2026-05-23 13:26:07] Pavel Durov: WhatsApp encryption is a giant fraud... [👁 1128733 ↻ 10748 💬 540 👍 8412 🔥 2103 ❤ 991]
+[2026-05-23 14:02:11] Go Talks | @rob: generics landed in 1.18 [💬 4]
 ```
+
+Each line is `[date] chat: text` for channel posts, or `[date] chat | author: text` when the message has a distinct sender (groups, supergroups). Reaction and view counters are appended in brackets when present.
 
 ### Message fields
 

@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	searchcmd "github.com/searchtgcli/tgs/internal/cmd/search"
-	sourcescmd "github.com/searchtgcli/tgs/internal/cmd/sources"
+	searchcmd "github.com/garenal1v3/tgs-cli/internal/cmd/search"
+	sourcescmd "github.com/garenal1v3/tgs-cli/internal/cmd/sources"
 )
 
 var (

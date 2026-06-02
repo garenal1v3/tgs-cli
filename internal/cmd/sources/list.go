@@ -9,11 +9,11 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/spf13/cobra"
 
-	"github.com/searchtgcli/tgs/internal/profile"
-	"github.com/searchtgcli/tgs/internal/resolve"
-	"github.com/searchtgcli/tgs/internal/retry"
-	sourcessvc "github.com/searchtgcli/tgs/internal/sources"
-	"github.com/searchtgcli/tgs/internal/telegram"
+	"github.com/garenal1v3/tgs-cli/internal/profile"
+	"github.com/garenal1v3/tgs-cli/internal/resolve"
+	"github.com/garenal1v3/tgs-cli/internal/retry"
+	sourcessvc "github.com/garenal1v3/tgs-cli/internal/sources"
+	"github.com/garenal1v3/tgs-cli/internal/telegram"
 )
 
 // newListCmd returns the "sources list" subcommand.

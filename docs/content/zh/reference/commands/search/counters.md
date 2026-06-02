@@ -3,8 +3,6 @@ title: tgs search counters
 weight: 30
 ---
 
-> **注意：** 本文档可能落后于[英文版本](/en/reference/commands/search/counters/)。
-
 # tgs search counters
 
 获取一个或多个聊天中按类型分组的消息计数（照片、视频、文档等）。
