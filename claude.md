@@ -15,6 +15,17 @@ CLI-клиент для поиска по Telegram через пользоват
 - **Авторизация**: импорт сессии из Telegram Desktop + override через env (TGS_API_ID, TGS_API_HASH)
 - **Дистрибуция**: Homebrew, GitHub Releases, go install, Docker, snap/AUR
 
+## Проверки перед пушем (pre-push hook)
+
+В репозитории зашит **pre-push git hook** (`.githooks/pre-push`, включается через `git config core.hooksPath=.githooks`). При `git push` он автоматически прогоняет в Docker полный CI-набор и блокирует push при любой ошибке:
+
+1. сборка CI-образа `tgs-ci:local` из `Dockerfile.ci`;
+2. `golangci-lint run ./...` (линт);
+3. `make test` (тесты);
+4. `cd docs && hugo --minify` (сборка документации).
+
+Линтеры, тесты и сборку docs **НЕ нужно прогонять отдельно перед пушем** — хук всё проверит сам. Просто коммить и пуш; если push упал на хуке — читай его вывод и чини. Ручной прогон осмыслен только в быстром цикле во время работы, не как обязательный шаг перед каждым push.
+
 ## Документация и README
 
 После ЛЮБОЙ работы проверяй, нужно ли обновить документацию или README.
