@@ -3,8 +3,6 @@ title: tgs sources folders
 weight: 30
 ---
 
-> **注意：** 本文档可能落后于[英文版本](/en/reference/commands/sources/folders/)。
-
 # tgs sources folders
 
 枚举用户的 Telegram **文件夹**（UI 中的对话筛选器），并按 Telegram 客户端的方式

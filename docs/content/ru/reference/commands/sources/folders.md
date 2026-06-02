@@ -3,8 +3,6 @@ title: tgs sources folders
 weight: 30
 ---
 
-> **Примечание:** Эта документация может отставать от [английской версии](/en/reference/commands/sources/folders/).
-
 # tgs sources folders
 
 Перечисляет **папки** Telegram пользователя (диалоговые фильтры из интерфейса) и

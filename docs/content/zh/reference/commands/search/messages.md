@@ -3,8 +3,6 @@ title: tgs search messages
 weight: 10
 ---
 
-> **注意：** 本文档可能落后于[英文版本](/en/reference/commands/search/messages/)。
-
 # tgs search messages
 
 在一个或多个聊天、频道或群组中搜索消息。

@@ -3,8 +3,6 @@ title: tgs sources list
 weight: 10
 ---
 
-> **Примечание:** Эта документация может отставать от [английской версии](/en/reference/commands/sources/list/).
-
 # tgs sources list
 
 Перечислить все диалоги Telegram в вашем аккаунте: каналы, супергруппы, группы, пользователей и ботов.

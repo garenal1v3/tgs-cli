@@ -3,8 +3,6 @@ title: tgs search messages
 weight: 10
 ---
 
-> **Примечание:** Эта документация может отставать от [английской версии](/en/reference/commands/search/messages/).
-
 # tgs search messages
 
 Поиск сообщений в одном или нескольких чатах, каналах или группах.

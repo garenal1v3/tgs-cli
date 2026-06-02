@@ -3,8 +3,6 @@ title: tgs search global
 weight: 20
 ---
 
-> **注意：** 本文档可能落后于[英文版本](/en/reference/commands/search/global/)。
-
 # tgs search global
 
 在所有聊天、频道和群组中全局搜索消息。

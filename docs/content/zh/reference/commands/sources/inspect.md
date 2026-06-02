@@ -3,8 +3,6 @@ title: tgs sources inspect
 weight: 20
 ---
 
-> **注意：** 本文档可能落后于[英文版本](/en/reference/commands/sources/inspect/)。
-
 # tgs sources inspect
 
 获取单个 Telegram 来源的详细信息。适用于您已订阅的来源，也适用于您未加入的公开频道。

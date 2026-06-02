@@ -4,8 +4,6 @@ weight: 25
 bookCollapseSection: true
 ---
 
-> **注意：** 本文档可能落后于[英文版本](/en/reference/commands/sources/)。
-
 # sources 命令
 
 用于枚举和查看您账户中的 Telegram 对话（频道、群组、用户、机器人）的命令。
